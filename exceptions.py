@@ -1,12 +1,16 @@
 from datetime import datetime
 
 
-class ApplicationNotFoundError(Exception):
+class ResourceNotFoundError(Exception):
     """Missing resource. (404)"""
     pass
 
 class ValidationError(Exception):
     """Invalid data. (400)"""
+    pass
+
+class DuplicateEmailError(Exception):
+    """This email is already registered. (409)"""
     pass
 
 def validate_dates(data):

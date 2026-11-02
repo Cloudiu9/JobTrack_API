@@ -1,5 +1,5 @@
 import pytest
-from exceptions import ApplicationNotFoundError, ValidationError
+from exceptions import ResourceNotFoundError, ValidationError
 from services import application_service
 
 def raise_error(error, func_name, data):
@@ -124,7 +124,7 @@ def test_delete_application_success():
 
     application_service.delete_application(app["id"])
 
-    with pytest.raises(ApplicationNotFoundError):
+    with pytest.raises(ResourceNotFoundError):
         application_service.get_application_by_id(app["id"])
 
 
@@ -138,8 +138,8 @@ def test_access_nonexistent_id():
 
     app = application_service.create_application(data)
 
-    with pytest.raises(ApplicationNotFoundError):
+    with pytest.raises(ResourceNotFoundError):
         application_service.modify_application(app["id"]+1, {"company": "Bosch"})
 
-    with pytest.raises(ApplicationNotFoundError):
+    with pytest.raises(ResourceNotFoundError):
         application_service.delete_application(app["id"]+1)

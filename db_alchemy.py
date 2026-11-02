@@ -87,7 +87,9 @@ SessionFactory = sessionmaker(
     bind=engine,
 )
 
-def retrieve_all_alchemy(session):
+# APPLICATIONS
+
+def retrieve_applications_all_alchemy(session):
     stmt = select(Application).order_by(Application.id)
     applications = session.scalars(stmt).all()
 
@@ -105,7 +107,7 @@ def retrieve_all_alchemy(session):
     #     })
     return all_apps
 
-def retrieve_id_alchemy(session, app_id):
+def retrieve_application_id_alchemy(session, app_id):
     # OLD
     # stmt = select(Application).where(Application.id == app_id)
     # application: Application | None = session.scalars(stmt).one_or_none()
@@ -118,7 +120,7 @@ def retrieve_id_alchemy(session, app_id):
     
     return application.to_dict()
 
-def insert_db_alchemy(session, data):
+def insert_application_alchemy(session, data):
     app = Application(**data)
     session.add(app)
     session.flush()
@@ -126,7 +128,7 @@ def insert_db_alchemy(session, data):
 
     return app.to_dict()
 
-def update_id_alchemy(session, app_id, data):
+def update_application_id_alchemy(session, app_id, data):
     # if not data:
     #     return None
     application = session.get(Application, app_id)
@@ -154,7 +156,7 @@ def update_id_alchemy(session, app_id, data):
 
     return application.to_dict()
 
-def delete_id_alchemy(session, app_id):
+def delete_application_id_alchemy(session, app_id):
     application = session.get(Application, app_id)
 
     if application is None:
@@ -165,13 +167,8 @@ def delete_id_alchemy(session, app_id):
     session.delete(application)
     return application_dict
 
-# def insert_db_alchemy(session, data):
-#     app = Application(**data)
-#     session.add(app)
-#     session.flush()
-#     session.refresh(app)
+# USER
 
-#     return app.to_dict()
 def register_user_alchemy(session, data):
     new_user = User(**data)
     session.add(new_user)
@@ -179,3 +176,11 @@ def register_user_alchemy(session, data):
     session.refresh(new_user)
 
     return new_user.to_dict()
+
+def retrieve_user_id_alchemy(session, user_id):
+    user = session.get(User, user_id)
+
+    if user is None:
+        return None
+    
+    return user.to_dict()

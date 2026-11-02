@@ -1,6 +1,6 @@
 from flask import Blueprint, json, jsonify, request
 from services.application_service import get_application_by_id, get_applications, create_application, modify_application, delete_application
-from exceptions import ApplicationNotFoundError, ValidationError
+from exceptions import ResourceNotFoundError, ValidationError
 import logging
 from werkzeug.exceptions import HTTPException
 
@@ -21,7 +21,7 @@ def handle_validation_error(e):
     }
     return jsonify(payload), 400
 
-@application_bp.app_errorhandler(ApplicationNotFoundError)
+@application_bp.app_errorhandler(ResourceNotFoundError)
 def handle_missing_error(e):
     payload = {
         "error": "MISSING_ERROR",

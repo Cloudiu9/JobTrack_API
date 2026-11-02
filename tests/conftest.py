@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.application import Base
-from services import application_service
+from services import application_service, user_service
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -40,4 +40,10 @@ def test_session_factory(test_engine):
 def patch_session_factory(monkeypatch, test_session_factory):
     # replaces real factory with test one before testing
     monkeypatch.setattr(application_service,
+     "SessionFactory", test_session_factory)
+
+@pytest.fixture(autouse=True)
+def patch_user_factory(monkeypatch, test_session_factory):
+    # replaces real factory with test one before testing
+    monkeypatch.setattr(user_service,
      "SessionFactory", test_session_factory)

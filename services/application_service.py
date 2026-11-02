@@ -1,23 +1,22 @@
-from db_alchemy import SessionFactory, retrieve_all_alchemy, retrieve_id_alchemy, insert_db_alchemy, update_id_alchemy, delete_id_alchemy, register_user_alchemy
+from db_alchemy import SessionFactory, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 from models.application import STATUS, ALLOWED_KEYS
-from exceptions import ApplicationNotFoundError, ValidationError, enforce_rules, validate_dates
+from exceptions import ResourceNotFoundError, ValidationError, enforce_rules, validate_dates
 from pydantic_rules import CreateApplicationRequest
 from pydantic import ValidationError as PydanticValidationError
-from security import hash_password
 
 def get_application_by_id(app_id):
     with SessionFactory() as session:
-        application = retrieve_id_alchemy(session, app_id)
+        application = retrieve_application_id_alchemy(session, app_id)
 
     if application is None:
-        raise ApplicationNotFoundError("Application not found.")
+        raise ResourceNotFoundError("Application not found.")
 
     return application
 
 
 def get_applications():
     with SessionFactory() as session:
-        all_apps = retrieve_all_alchemy(session)
+        all_apps = retrieve_applications_all_alchemy(session)
     return all_apps
 
 
@@ -55,7 +54,7 @@ def create_application(data):
 
     # .begin() automatically handles (try/except) commit() and rollback()
     with SessionFactory.begin() as session:
-        new_job = insert_db_alchemy(session, validated_pydantic_data)
+        new_job = insert_application_alchemy(session, validated_pydantic_data)
 
     return new_job
 
@@ -82,29 +81,18 @@ def modify_application(app_id, data):
         raise ValidationError("Incorrect status.") 
 
     with SessionFactory.begin() as session:
-        application_to_modify = update_id_alchemy(session, app_id, data)
+        application_to_modify = update_application_id_alchemy(session, app_id, data)
 
     if application_to_modify is None:
-        raise ApplicationNotFoundError("Application not found.")
+        raise ResourceNotFoundError("Application not found.")
     
     return application_to_modify
 
 def delete_application(app_id):
     with SessionFactory.begin() as session:
-        result = delete_id_alchemy(session, app_id)
+        result = delete_application_id_alchemy(session, app_id)
 
     if result is None:
-        raise ApplicationNotFoundError("Could not find application to delete.")
+        raise ResourceNotFoundError("Could not find application to delete.")
     
     return result
-
-def register_user(email, password):
-    if not email or not password:
-        raise ValidationError("Missing email or password.")
-
-    pass_hash = hash_password(password)
-
-    data = email, pass_hash
-
-    with SessionFactory.begin() as session:
-        result = register_user_alchemy(session, data)

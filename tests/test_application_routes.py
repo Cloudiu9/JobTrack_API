@@ -219,7 +219,7 @@ def test_unexpected_error_returns_500(client, existing_application, monkeypatch)
     monkeypatch.setitem(flask_app.config, "PROPAGATE_EXCEPTIONS", False)
     app_id = existing_application["id"]
 
-    monkeypatch.setattr(application_service,"update_id_alchemy", mocked_update_id_alchemy)
+    monkeypatch.setattr(application_service,"update_application_id_alchemy", mocked_update_id_alchemy)
 
     response = client.patch(f"/applications/{app_id}", json={"title": "VALID_TITLE"})
 
@@ -231,7 +231,7 @@ def test_unexpected_error_returns_500(client, existing_application, monkeypatch)
 def test_patch_transaction_rolls_back_on_exception(client, existing_application, monkeypatch):
     app_id = existing_application["id"]
 
-    monkeypatch.setattr(application_service,"update_id_alchemy", mocked_update_id_alchemy)
+    monkeypatch.setattr(application_service,"update_application_id_alchemy", mocked_update_id_alchemy)
 
     modified_application = client.patch(f"/applications/{app_id}", json={"title": "VALID_TITLE"})
 
