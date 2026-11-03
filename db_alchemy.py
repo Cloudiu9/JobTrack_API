@@ -177,6 +177,14 @@ def register_user_alchemy(session, data):
 
     return new_user.to_dict()
 
+def retrieve_users_all_alchemy(session):
+    stmt = select(User).order_by(User.id)
+    users = session.scalars(stmt).all()
+
+    all_users = [user.to_dict() for user in users]
+
+    return all_users
+
 def retrieve_user_id_alchemy(session, user_id):
     user = session.get(User, user_id)
 

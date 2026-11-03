@@ -1,7 +1,10 @@
 import pytest
-from security import hash_password, verify_password
+from db_alchemy import retrieve_users_all_alchemy
+from models.user import User
+from security import verify_password
 from services import user_service
 from exceptions import DuplicateEmailError, ValidationError
+from sqlalchemy import select
 
 
 def raise_error(error, func_name, data):
@@ -10,7 +13,7 @@ def raise_error(error, func_name, data):
     with pytest.raises(error):
         target_func(data)
 
-def create_test_user():
+def register_test_user():
     data = {
         "email": "    USER@gmail.com  ",
         "password": "  passwordtenchars  ",
@@ -18,19 +21,20 @@ def create_test_user():
 
     user = user_service.register_user(data)
 
-    # TODO retrieve_user_id_alchemy returns to_dict(), so I can't access stored_user's password_hash
-    # seems that even without to_dict(), it still doesn't return password_hash, just this
-    # {'id': 1, 'email': 'user@gmail.com'}
-    stored_user = user_service.get_user_by_id(user["id"])
-    print(stored_user)
-    # assert verify_password(data["password"], stored_user.password_hash)
+    with user_service.SessionFactory() as session:
+        stored_user = session.scalar(
+            select(User).where(User.email == "user@gmail.com")
+        )
+
+    assert stored_user is not None
+    assert stored_user.password_hash != data["password"]
+    assert verify_password(stored_user.password_hash, data["password"] )
     
     return user
     
 
 def test_user_creation_success():
-    user = create_test_user()
-    print(user)
+    user = register_test_user()
 
 
     assert user["id"] is not None
@@ -76,6 +80,17 @@ def test_user_duplication_failure():
         "password": "  passwordtenchars  ",
     }
 
-    create_test_user()
+    register_test_user()
+
+    # create a second user with the same email
     raise_error(DuplicateEmailError, "register_user", data)
 
+    all_users = user_service.get_all_users()
+
+    assert len(all_users) == 1
+
+def test_empty_database():
+    all_users = user_service.get_all_users()
+
+    assert isinstance(all_users, list)
+    assert len(all_users) == 0
