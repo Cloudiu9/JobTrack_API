@@ -2,13 +2,13 @@ import pytest
 from db_alchemy import retrieve_users_all_alchemy
 from models.user import User
 from security import verify_password
-from services import user_service
+from services import auth_service
 from exceptions import DuplicateEmailError, ValidationError
 from sqlalchemy import select
 
 
 def raise_error(error, func_name, data):
-    target_func = getattr(user_service, func_name)
+    target_func = getattr(auth_service, func_name)
 
     with pytest.raises(error):
         target_func(data)
@@ -19,9 +19,9 @@ def register_test_user():
         "password": "  passwordtenchars  ",
     }
 
-    user = user_service.register_user(data)
+    user = auth_service.register_user(data)
 
-    with user_service.SessionFactory() as session:
+    with auth_service.SessionFactory() as session:
         stored_user = session.scalar(
             select(User).where(User.email == "user@gmail.com")
         )
@@ -85,12 +85,12 @@ def test_user_duplication_failure():
     # create a second user with the same email
     raise_error(DuplicateEmailError, "register_user", data)
 
-    all_users = user_service.get_all_users()
+    all_users = auth_service.get_all_users()
 
     assert len(all_users) == 1
 
 def test_empty_database():
-    all_users = user_service.get_all_users()
+    all_users = auth_service.get_all_users()
 
     assert isinstance(all_users, list)
     assert len(all_users) == 0

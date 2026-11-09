@@ -1,8 +1,16 @@
 import pytest
+from app import app as flask_app
+from models.application import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.application import Base
-from services import application_service, user_service
+from services import application_service, auth_service
+
+@pytest.fixture
+def client(monkeypatch):
+    monkeypatch.setitem(flask_app.config, "TESTING", True)
+
+    with flask_app.test_client() as client:
+        yield client
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -45,5 +53,5 @@ def patch_session_factory(monkeypatch, test_session_factory):
 @pytest.fixture(autouse=True)
 def patch_user_factory(monkeypatch, test_session_factory):
     # replaces real factory with test one before testing
-    monkeypatch.setattr(user_service,
+    monkeypatch.setattr(auth_service,
      "SessionFactory", test_session_factory)

@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from db_alchemy import SessionFactory, register_user_alchemy, retrieve_user_id_alchemy, retrieve_users_all_alchemy
 from exceptions import ResourceNotFoundError, DuplicateEmailError, ValidationError
 from pydantic_rules import CreateNewUser
-from security import hash_password, verify_password
+from security import hash_password
 
 from pydantic import ValidationError as PydanticValidationError
 

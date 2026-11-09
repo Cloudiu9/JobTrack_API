@@ -18,13 +18,6 @@ def mocked_update_id_alchemy(session, app_id, data):
     raise RuntimeError("Simulated failure after flush")
 
 @pytest.fixture
-def client(monkeypatch):
-    monkeypatch.setitem(flask_app.config, "TESTING", True)
-
-    with flask_app.test_client() as client:
-        yield client
-
-@pytest.fixture
 def existing_application(client):
     """Creates an application for the current test; the database transaction is rolled back during teardown."""
     payload = {
