@@ -1,6 +1,10 @@
-from datetime import datetime
+import logging
+from flask import jsonify, json
+from werkzeug.exceptions import HTTPException
 
+logger = logging.getLogger(__name__)
 
+# Custom Core Exceptions
 class ResourceNotFoundError(Exception):
     """Missing resource. (404)"""
     pass
@@ -13,32 +17,43 @@ class DuplicateEmailError(Exception):
     """This email is already registered. (409)"""
     pass
 
-def validate_dates(data):
-    DATE_FIELDS = ["date_interview", "date_applied"]
 
-    for field in DATE_FIELDS:
-        if field in data:
-            value = data[field]
+# Centralized Handler Functions
+def handle_validation_error(e):
+    return jsonify({
+        "error": "VALIDATION_ERROR",
+        "message": "Data is invalid.",
+        "details": str(e)
+    }), 400
 
-            if data[field] is None and field == "date_interview":
-                continue
+def handle_missing_error(e):
+    return jsonify({
+        "error": "MISSING_ERROR",
+        "message": "Resource not found.",
+        "details": str(e)
+    }), 404
 
-            if not isinstance(value, str):
-                raise ValidationError(f"The field {field} must be a string.")
+def handle_500_error(e):
+    logger.exception(f"Unexpected server error: {str(e)}")
+    return jsonify({
+        "error": "INTERNAL_SERVER_ERROR",
+        "message": "Something went wrong. Please try again later.",
+    }), 500
 
-            try:
-                data[field] = datetime.strptime(value, "%Y-%m-%d").date()
-            except ValueError:
-                raise ValidationError(
-                    f"Invalid date format for {field}. Please use the ISO standard YYYY-MM-DD (e.g., 2026-11-13)"
-                )
+def handle_http_exception(e):
+    response = e.get_response()
+    response.data = json.dumps({
+        "error": e.name.upper().replace(" ", "_"),
+        "message": e.description,
+    })
+    response.content_type = "application/json"
+    return response
 
 
-def enforce_rules(data):
-    # don't allow null, except for date_interview
-    if any((isinstance(value, str) and value.strip() == "") or (value is None and key != "date_interview") for key, value in data.items()):
-        raise ValidationError("Empty field found.") 
-    
-    # only allow strings, except for date_interview (which can be null)
-    if not all(isinstance(value,str) or key == "date_interview" for key, value in data.items()):
-        raise ValidationError("Non-string field found.")
+# Registration Factory
+def register_error_handlers(app):
+    """Binds all global exception handlers to the Flask app instance."""
+    app.register_error_handler(ValidationError, handle_validation_error)
+    app.register_error_handler(ResourceNotFoundError, handle_missing_error)
+    app.register_error_handler(HTTPException, handle_http_exception)
+    app.register_error_handler(Exception, handle_500_error)

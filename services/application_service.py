@@ -1,8 +1,39 @@
+from datetime import datetime
 from db_alchemy import SessionFactory, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 from models.application import STATUS, ALLOWED_KEYS
-from exceptions import ResourceNotFoundError, ValidationError, enforce_rules, validate_dates
+from exceptions import ResourceNotFoundError, ValidationError
 from pydantic_rules import CreateApplicationRequest
 from pydantic import ValidationError as PydanticValidationError
+
+def validate_dates(data):
+    DATE_FIELDS = ["date_interview", "date_applied"]
+
+    for field in DATE_FIELDS:
+        if field in data:
+            value = data[field]
+
+            if data[field] is None and field == "date_interview":
+                continue
+
+            if not isinstance(value, str):
+                raise ValidationError(f"The field {field} must be a string.")
+
+            try:
+                data[field] = datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValidationError(
+                    f"Invalid date format for {field}. Please use the ISO standard YYYY-MM-DD (e.g., 2026-11-13)"
+                )
+
+
+def enforce_rules(data):
+    # don't allow null, except for date_interview
+    if any((isinstance(value, str) and value.strip() == "") or (value is None and key != "date_interview") for key, value in data.items()):
+        raise ValidationError("Empty field found.") 
+    
+    # only allow strings, except for date_interview (which can be null)
+    if not all(isinstance(value,str) or key == "date_interview" for key, value in data.items()):
+        raise ValidationError("Non-string field found.")
 
 def get_application_by_id(app_id):
     with SessionFactory() as session:
