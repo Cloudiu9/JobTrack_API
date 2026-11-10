@@ -33,12 +33,20 @@ def handle_missing_error(e):
         "details": str(e)
     }), 404
 
+def handle_duplicate_email_error(e):
+    return jsonify({
+        "error": "DUPLICATE_EMAIL_ERROR",
+        "message": "Resource not found.",
+        "details": str(e)
+    }), 409
+
 def handle_500_error(e):
     logger.exception(f"Unexpected server error: {str(e)}")
     return jsonify({
         "error": "INTERNAL_SERVER_ERROR",
         "message": "Something went wrong. Please try again later.",
     }), 500
+
 
 def handle_http_exception(e):
     response = e.get_response()
@@ -55,5 +63,6 @@ def register_error_handlers(app):
     """Binds all global exception handlers to the Flask app instance."""
     app.register_error_handler(ValidationError, handle_validation_error)
     app.register_error_handler(ResourceNotFoundError, handle_missing_error)
+    app.register_error_handler(DuplicateEmailError, handle_duplicate_email_error)
     app.register_error_handler(HTTPException, handle_http_exception)
     app.register_error_handler(Exception, handle_500_error)

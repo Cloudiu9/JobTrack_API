@@ -3,7 +3,7 @@ from app import app as flask_app
 from models.application import Application
 from services import application_service 
 
-NON_EXISTENT_ID = 9999999999
+NON_EXISTENT_ID = 999999
 
 # same as db_alchemy.update_id_alchemy, but flushes() after change and raises error
 def mocked_update_id_alchemy(session, app_id, data):

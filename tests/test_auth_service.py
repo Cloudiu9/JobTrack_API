@@ -27,6 +27,7 @@ def register_test_user():
         )
 
     assert stored_user is not None
+    print(stored_user)
     assert stored_user.password_hash != data["password"]
     assert verify_password(stored_user.password_hash, data["password"] )
     
