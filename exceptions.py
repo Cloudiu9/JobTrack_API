@@ -17,12 +17,23 @@ class DuplicateEmailError(Exception):
     """This email is already registered. (409)"""
     pass
 
+class AuthenticationError(Exception):
+    """Incorrect email or password."""
+    pass
+
 
 # Centralized Handler Functions
 def handle_validation_error(e):
     return jsonify({
         "error": "VALIDATION_ERROR",
         "message": "Data is invalid.",
+        "details": str(e)
+    }), 400
+
+def handle_authentication_error(e):
+    return jsonify({
+        "error": "AUTHENTICATION_ERROR",
+        "message": "Incorrect email or password.",
         "details": str(e)
     }), 400
 
@@ -63,6 +74,7 @@ def register_error_handlers(app):
     """Binds all global exception handlers to the Flask app instance."""
     app.register_error_handler(ValidationError, handle_validation_error)
     app.register_error_handler(ResourceNotFoundError, handle_missing_error)
+    app.register_error_handler(AuthenticationError, handle_authentication_error)
     app.register_error_handler(DuplicateEmailError, handle_duplicate_email_error)
     app.register_error_handler(HTTPException, handle_http_exception)
     app.register_error_handler(Exception, handle_500_error)

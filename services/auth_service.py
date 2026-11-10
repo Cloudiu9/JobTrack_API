@@ -1,12 +1,9 @@
 from sqlalchemy.exc import IntegrityError
-
-from db_alchemy import SessionFactory, register_user_alchemy, retrieve_user_id_alchemy, retrieve_users_all_alchemy
-from exceptions import ResourceNotFoundError, DuplicateEmailError, ValidationError
+from db_alchemy import SessionFactory, login_user_alchemy, register_user_alchemy, retrieve_user_id_alchemy, retrieve_users_all_alchemy
+from exceptions import AuthenticationError, ResourceNotFoundError, DuplicateEmailError, ValidationError
 from pydantic_rules import CreateNewUser
 from security import hash_password
-
 from pydantic import ValidationError as PydanticValidationError
-
 
 def register_user(data):
     if not isinstance(data, dict):
@@ -36,9 +33,23 @@ def register_user(data):
     except IntegrityError as e:
         raise DuplicateEmailError("This email is already registered.") from e
 
-def get_user_by_id(app_id):
+# TODO
+def login_user(data):
+    if not isinstance(data, dict):
+        raise ValidationError("Body must be a valid JSON.")
+
+    try:
+        with SessionFactory.begin() as session:
+            user = login_user_alchemy(session, data)
+        return user
+    except ResourceNotFoundError as e:
+        raise ResourceNotFoundError("User is not registered.") from e
+    except AuthenticationError as e:
+        raise AuthenticationError("Incorrect email or password.") from e
+
+def get_user_by_id(user_id):
     with SessionFactory() as session:
-        user = retrieve_user_id_alchemy(session, app_id)
+        user = retrieve_user_id_alchemy(session, user_id)
 
     if user is None:
         raise ResourceNotFoundError("User not found.")

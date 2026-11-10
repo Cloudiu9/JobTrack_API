@@ -123,3 +123,5 @@ def test_post_failure(client, payload):
 
     assert response.status_code == 400
     assert response.json["error"] == "VALIDATION_ERROR"
+
+# TODO Test user login

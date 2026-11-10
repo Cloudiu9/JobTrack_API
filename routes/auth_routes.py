@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 
-from services.auth_service import get_all_users, get_user_by_id, register_user
+from services.auth_service import get_all_users, get_user_by_id, login_user, register_user
 
 auth_bp = Blueprint(
     'auth', # Blueprint name
@@ -28,5 +28,14 @@ def create_user():
     data = request.get_json()
 
     new_user = register_user(data)
+
+    return jsonify(new_user), 201
+
+# login user TODO
+@auth_bp.route('', methods=["POST"])
+def authorize_user():
+    data = request.get_json()
+
+    new_user = login_user(data)
 
     return jsonify(new_user), 201

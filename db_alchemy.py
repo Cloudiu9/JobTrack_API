@@ -177,6 +177,13 @@ def register_user_alchemy(session, data):
 
     return new_user.to_dict()
 
+# TODO
+def login_user_alchemy(session, data):
+    stmt = select(User).where(User.email == data["email"])
+    registered_user = session.get(stmt)
+
+    return registered_user
+
 def retrieve_users_all_alchemy(session):
     stmt = select(User).order_by(User.id)
     users = session.scalars(stmt).all()
