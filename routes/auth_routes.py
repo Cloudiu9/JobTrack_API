@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from services.auth_service import get_all_users, get_user_by_id, login_user, register_user
 
@@ -23,7 +24,7 @@ def get_users():
     return jsonify(users)
 
 # create user
-@auth_bp.route('', methods=["POST"])
+@auth_bp.route('/register', methods=["POST"])
 def create_user():
     data = request.get_json()
 
@@ -32,10 +33,18 @@ def create_user():
     return jsonify(new_user), 201
 
 # login user TODO
-@auth_bp.route('', methods=["POST"])
+@auth_bp.route('/login', methods=["POST"])
 def authorize_user():
     data = request.get_json()
 
-    new_user = login_user(data)
+    verified_user_jwt = login_user(data)
 
-    return jsonify(new_user), 201
+    return jsonify(verified_user_jwt), 200
+
+# protected route that requires login
+@auth_bp.route("/secure", methods=["GET"])
+@jwt_required()
+def secured_route():
+    user_id = get_jwt_identity()
+
+    return jsonify(user_id)

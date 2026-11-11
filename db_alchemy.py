@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from models.application import Application
 from models.user import User
+from security import verify_password
 
 load_dotenv()
 
@@ -180,7 +181,7 @@ def register_user_alchemy(session, data):
 # TODO
 def login_user_alchemy(session, data):
     stmt = select(User).where(User.email == data["email"])
-    registered_user = session.get(stmt)
+    registered_user = session.scalar(stmt)
 
     return registered_user
 
