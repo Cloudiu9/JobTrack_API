@@ -1,6 +1,6 @@
 from flask_jwt_extended import create_access_token
 from sqlalchemy.exc import IntegrityError
-from db_alchemy import SessionFactory, login_user_alchemy, register_user_alchemy, retrieve_user_id_alchemy, retrieve_users_all_alchemy
+from db_alchemy import SessionFactory, get_user_by_email_alchemy, register_user_alchemy, retrieve_user_id_alchemy, retrieve_users_all_alchemy
 from exceptions import AuthenticationError, ResourceNotFoundError, DuplicateEmailError, ValidationError
 from pydantic_rules import CreateNewUser
 from security import hash_password, verify_password
@@ -34,7 +34,6 @@ def register_user(data):
     except IntegrityError as e:
         raise DuplicateEmailError("This email is already registered.") from e
 
-# TODO
 def login_user(data):
     if not isinstance(data, dict):
         raise ValidationError("Body must be a valid JSON.")
@@ -42,7 +41,7 @@ def login_user(data):
     # retrieve user password hash from db and compare it to data["password"]
     try:
         with SessionFactory() as session:
-            user = login_user_alchemy(session, data)
+            user = get_user_by_email_alchemy(session, data)
 
             if user is not None:
             # if hash doesn't verify, raise error (user not logged in)
@@ -51,8 +50,7 @@ def login_user(data):
 
                 user_jwt = create_access_token(identity=str(user.id))
                 return user_jwt
-    except ResourceNotFoundError as e:
-        raise ResourceNotFoundError("User is not registered.") from e
+            raise AuthenticationError
     except AuthenticationError as e:
         raise AuthenticationError("Incorrect email or password.") from e
 

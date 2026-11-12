@@ -32,14 +32,16 @@ def create_user():
 
     return jsonify(new_user), 201
 
-# login user TODO
+# login user
 @auth_bp.route('/login', methods=["POST"])
 def authorize_user():
     data = request.get_json()
 
-    verified_user_jwt = login_user(data)
+    response = {
+        "access_token": login_user(data)
+    }
 
-    return jsonify(verified_user_jwt), 200
+    return jsonify(response), 200
 
 # protected route that requires login
 @auth_bp.route("/secure", methods=["GET"])

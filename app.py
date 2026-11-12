@@ -7,7 +7,7 @@ from exceptions import register_error_handlers
 
 app = Flask(__name__)
 
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY","CnL1QvA3f2YS7ug4TnwYOsIDMJedLbstkHm46swtAhB")
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 
 jwt = JWTManager(app)
 

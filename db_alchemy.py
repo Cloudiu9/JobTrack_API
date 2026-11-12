@@ -178,8 +178,7 @@ def register_user_alchemy(session, data):
 
     return new_user.to_dict()
 
-# TODO
-def login_user_alchemy(session, data):
+def get_user_by_email_alchemy(session, data):
     stmt = select(User).where(User.email == data["email"])
     registered_user = session.scalar(stmt)
 
