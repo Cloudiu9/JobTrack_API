@@ -49,4 +49,4 @@ def authorize_user():
 def secured_route():
     user_id = get_jwt_identity()
 
-    return jsonify(user_id)
+    return jsonify({"user_id": int(user_id)}), 200

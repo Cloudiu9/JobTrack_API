@@ -52,10 +52,10 @@ def get_applications():
 
 
 def create_application(data):
-    if not isinstance(data, dict):
-        raise ValidationError("Body must be a valid JSON.")
-
     # Can be ommitted now, thanks to Pydantic
+    # if not isinstance(data, dict):
+    #     raise ValidationError("Body must be a valid JSON.")
+
     # if "id" in data:
     #     raise ValidationError("Bad request. (Do not provide an id)")
     
@@ -69,7 +69,7 @@ def create_application(data):
     #     raise ValidationError("Bad request. (Missing title)")
 
     try:
-        application = CreateApplicationRequest(**data)
+        application = CreateApplicationRequest.model_validate(data)
         validated_pydantic_data = application.model_dump(exclude_unset=True)
     except PydanticValidationError as e:
         raise ValidationError(str(e)) from e

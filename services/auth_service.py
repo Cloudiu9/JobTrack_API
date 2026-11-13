@@ -7,8 +7,8 @@ from security import hash_password, verify_password
 from pydantic import ValidationError as PydanticValidationError
 
 def register_user(data):
-    if not isinstance(data, dict):
-        raise ValidationError("Body must be a valid JSON.")
+    # if not isinstance(data, dict):
+    #     raise ValidationError("Body must be a valid JSON.")
     # data_for_validation = {"email": email, "password": password}
 
     try:
@@ -35,21 +35,23 @@ def register_user(data):
         raise DuplicateEmailError("This email is already registered.") from e
 
 def login_user(data):
-    if not isinstance(data, dict):
-        raise ValidationError("Body must be a valid JSON.")
+    try:
+        validated_data = CreateNewUser.model_validate(data)
+    except PydanticValidationError as e:
+        raise ValidationError from e
+
+    clean_email = validated_data.email
+    raw_password = validated_data.password.get_secret_value()
 
     # retrieve user password hash from db and compare it to data["password"]
     try:
         with SessionFactory() as session:
-            user = get_user_by_email_alchemy(session, data)
+            user = get_user_by_email_alchemy(session, clean_email)
 
-            if user is not None:
             # if hash doesn't verify, raise error (user not logged in)
-                if not verify_password(user.password_hash, data["password"]):
-                    raise AuthenticationError
+            if user and verify_password(user.password_hash, raw_password):
+                return create_access_token(identity=str(user.id))
 
-                user_jwt = create_access_token(identity=str(user.id))
-                return user_jwt
             raise AuthenticationError
     except AuthenticationError as e:
         raise AuthenticationError("Incorrect email or password.") from e

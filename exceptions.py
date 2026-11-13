@@ -35,7 +35,7 @@ def handle_authentication_error(e):
         "error": "AUTHENTICATION_ERROR",
         "message": "Incorrect email or password.",
         "details": str(e)
-    }), 400
+    }), 401
 
 def handle_missing_error(e):
     return jsonify({
