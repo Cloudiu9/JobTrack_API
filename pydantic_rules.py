@@ -20,33 +20,6 @@ class CreateApplicationRequest(BaseModel):
     status: Literal["applied", "interview"]
     date_interview: date | None = None
 
-valid_input = {
-    "company": "  Bosch ",
-    "title": "     Junior Engineer  ",
-    # "date_applied": None,
-    "status": "applied",
-    "date_interview": None
-}
-
-application = CreateApplicationRequest(**valid_input)
-db_data = application.model_dump(exclude_unset=True)
-# print(db_data) # Removes the excluded None date_applied
-
-
-invalid_input = {
-    "company": "   ",
-    # "title": "     Junior Engineer  ",
-    "date_applied": "not-a-date",
-    "status": "INVALID_DATA",
-    "date_interview": 100,
-    "id": 1
-}
-
-try:
-    CreateApplicationRequest(**invalid_input)
-except PydanticValidationError as e:
-    print(e)
-
 
 # User
 
@@ -68,22 +41,51 @@ class CreateNewUser(BaseModel):
     email: ValidatedEmail
     password: PasswordSecretStr
 
-valid_input = {
-    "email": "  testing@gmail.com ",
-    "password": "     Junior Engineer  "
-}
+# Examples:
 
-user = CreateNewUser(**valid_input) # type: ignore
-db_data = user.model_dump(exclude_unset=True)
-print(db_data)
+# valid_input = {
+#     "company": "  Bosch ",
+#     "title": "     Junior Engineer  ",
+#     # "date_applied": None,
+#     "status": "applied",
+#     "date_interview": None
+# }
+
+# application = CreateApplicationRequest(**valid_input)
+# db_data = application.model_dump(exclude_unset=True)
+# # print(db_data) # Removes the excluded None date_applied
 
 
-invalid_input = {
-    "email": "   ",
-    "password": "123456789",
-}
+# invalid_input = {
+#     "company": "   ",
+#     # "title": "     Junior Engineer  ",
+#     "date_applied": "not-a-date",
+#     "status": "INVALID_DATA",
+#     "date_interview": 100,
+#     "id": 1
+# }
 
-try:
-    CreateNewUser(**invalid_input) # type: ignore
-except PydanticValidationError as e:
-    print(e)
+# try:
+#     CreateApplicationRequest(**invalid_input)
+# except PydanticValidationError as e:
+#     print(e)
+
+# valid_input = {
+#     "email": "  testing@gmail.com ",
+#     "password": "     Junior Engineer  "
+# }
+
+# user = CreateNewUser(**valid_input) # type: ignore
+# db_data = user.model_dump(exclude_unset=True)
+# print(db_data)
+
+
+# invalid_input = {
+#     "email": "   ",
+#     "password": "123456789",
+# }
+
+# try:
+#     CreateNewUser(**invalid_input) # type: ignore
+# except PydanticValidationError as e:
+#     print(e)

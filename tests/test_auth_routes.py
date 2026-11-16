@@ -246,7 +246,12 @@ def test_post_secure_invalid_jwt(client):
 def test_post_secure_token_expiration(client, existing_user, time, status_code, json):
     start_time = datetime(2026, 11, 13, 12, 0, 0)
     with freeze_time(start_time):
-        token = create_access_token(identity=f"{existing_user["id"]}")
+        login_res = client.post(
+            "/auth/login",
+            json={"email": existing_user["email"], "password": "     TEST PASSWORD123"}
+        )
+
+        token = login_res.json["access_token"]
 
     # By default, expires in 15 minutes
     with freeze_time(start_time + timedelta(minutes=time)):

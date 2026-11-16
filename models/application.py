@@ -1,12 +1,15 @@
 from datetime import date
-from sqlalchemy import CheckConstraint, Date, Text, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from typing import TYPE_CHECKING
+from sqlalchemy import CheckConstraint, Date, Text, ForeignKey, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from models.base import Base
 
 STATUS = ("applied", "interview")
 ALLOWED_KEYS = ("company", "title", "date_applied", "status", "date_interview")
 
-class Base(DeclarativeBase):
-    pass
+# handle relationship error without circular imports
+if TYPE_CHECKING:
+    from models.user import User
 
 class Application(Base):
     __tablename__ = "applications"
@@ -16,6 +19,12 @@ class Application(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     company: Mapped[str] = mapped_column(Text)
     title: Mapped[str] = mapped_column(Text)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    user: Mapped["User"] = relationship(back_populates="applications")
 
     # Default value is generated automatically by the DB (server-side) (date)
     date_applied: Mapped[date] = mapped_column(Date, server_default=func.current_date())

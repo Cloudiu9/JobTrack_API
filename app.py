@@ -7,7 +7,13 @@ from exceptions import register_error_handlers
 
 app = Flask(__name__)
 
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+jwt_secret = os.environ.get("JWT_SECRET_KEY")
+if not jwt_secret:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable was not provided."
+    )
+
+app.config["JWT_SECRET_KEY"] = jwt_secret
 
 jwt = JWTManager(app)
 

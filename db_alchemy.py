@@ -9,62 +9,6 @@ from security import verify_password
 
 load_dotenv()
 
-# SQLALCHEMY cheatsheet
-
-    # # # Advanced Filtering Patterns 
-
-    # stmt = select(Application).where(
-    #     Application.status == "applied",
-    #     Application.company.ilike("%Nagarro%") # Case-insensitive partial match
-    # )
-
-    # # Explicit OR condition
-    # stmt = select(Application).where(
-    #     or_(Application.status == "interview", Application.status == "offer")
-    # )
-
-    # status_list = ["applied", "interviewing"]
-    # stmt = select(Application).where(Application.status.in_(status_list))
-
-    # # Shorthand for: .where(Application.status == "applied")
-    # stmt = select(Application).filter_by(status="applied")
-
-    # # # Precise Result Fetching Operators
-
-    # session.get(Model, id)	
-    # Fetches directly by Primary Key. Bypasses writing a full select() statement entirely. Checks identity map first.	
-    # Fetching a single row by ID (highly optimized).
-
-    # .one_or_none()	
-    # Returns exactly one object or None. Raises an error if multiple rows match.	
-    # Safe unique queries (e.g., lookup by unique slug or email).
-
-    # .first()	
-    # Returns the first result or None. Does not throw an error if multiple match.	
-    # Getting the latest record or when you don't care about duplicates.
-
-    # .one()	
-    # Returns exactly one object. Raises an exception if None or if multiple rows match.	
-    # Crucial endpoints where missing data indicates a critical application error.
-
-    # # # Performance & Scaling
-
-    # Pagination for get_all endpoints:
-    # def retrieve_all_paginated(session, page: int = 1, per_page: int = 20):
-    # stmt = (
-    #     select(Application)
-    #     .order_by(Application.id)
-    #     .limit(per_page)
-    #     .offset((page - 1) * per_page)
-    # )
-    # return session.scalars(stmt).all()
-
-
-    # If Application model has relationships (belongs to an User, etc.), SQLAlchemy defaults to Lazy Loading ==> N+1 query problem ==> eager loading to fix (fetches relationships in a single optimized query)
-    # Pre-fetches the 'interviews' relationship simultaneously
-    # stmt = select(Application).options(selectinload(Application.interviews))
-
-
 DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT", "5432")
 DB_NAME =os.environ.get("DB_NAME")
