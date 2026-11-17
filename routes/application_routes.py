@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
-from services.application_service import get_application_by_id, get_applications, create_application, modify_application, delete_application
+from flask_jwt_extended import get_jwt_identity, jwt_required
+from services.application_service import get_application_by_id, get_applications, create_application, get_applications_protected, modify_application, delete_application
 
 application_bp = Blueprint(
     'applications', # Blueprint name
@@ -20,6 +21,16 @@ def get_apps():
     applications = get_applications()
 
     return jsonify(applications)
+
+# get all apps from authorized user
+@application_bp.route("/user", methods=["GET"])
+@jwt_required()
+def get_apps_protected():
+    user_id = int(get_jwt_identity())
+
+    user_apps = get_applications_protected(user_id)
+
+    return jsonify(user_apps)
 
 # create new app
 @application_bp.route("", methods=["POST"])

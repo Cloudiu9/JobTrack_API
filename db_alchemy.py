@@ -52,6 +52,15 @@ def retrieve_applications_all_alchemy(session):
     #     })
     return all_apps
 
+
+def retrieve_applications_protected_alchemy(session, user_id):
+    stmt = select(Application).where(Application.user_id == user_id).order_by(Application.id)
+    applications = session.scalars(stmt).all()
+
+    user_apps = [app.to_dict() for app in applications]
+
+    return user_apps
+
 def retrieve_application_id_alchemy(session, app_id):
     # OLD
     # stmt = select(Application).where(Application.id == app_id)

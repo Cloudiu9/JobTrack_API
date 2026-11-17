@@ -1,5 +1,5 @@
 from datetime import datetime
-from db_alchemy import SessionFactory, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, update_application_id_alchemy, delete_application_id_alchemy
+from db_alchemy import SessionFactory, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, retrieve_applications_protected_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 from models.application import STATUS, ALLOWED_KEYS
 from exceptions import ResourceNotFoundError, ValidationError
 from pydantic_rules import CreateApplicationRequest
@@ -49,6 +49,11 @@ def get_applications():
     with SessionFactory() as session:
         all_apps = retrieve_applications_all_alchemy(session)
     return all_apps
+
+def get_applications_protected(user_id):
+    with SessionFactory() as session:
+        apps_protected = retrieve_applications_protected_alchemy(session, user_id)
+    return apps_protected
 
 
 def create_application(data):
