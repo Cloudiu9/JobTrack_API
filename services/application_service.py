@@ -55,7 +55,6 @@ def get_applications_protected(user_id):
         apps_protected = retrieve_applications_protected_alchemy(session, user_id)
     return apps_protected
 
-
 def create_application(data):
     # Can be ommitted now, thanks to Pydantic
     # if not isinstance(data, dict):

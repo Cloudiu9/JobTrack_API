@@ -1,19 +1,21 @@
 import pytest
-from exceptions import ResourceNotFoundError, ValidationError
+from exceptions import AuthenticationError, ResourceNotFoundError, ValidationError
 from services import application_service
+from services.auth_service import register_user
 
-def raise_error(error, func_name, data):
+def raise_error(error, func_name, *args):
     target_func = getattr(application_service, func_name)
 
     with pytest.raises(error):
-        target_func(data)
+        target_func(*args)
 
 def create_test_application():
     data = {
         "company": "Google",
         "title": "Software Engineer",
         "status": "applied",
-        "date_interview": "2026-12-12"
+        "date_interview": "2026-12-12",
+        "user_id": "1"
     }
     app = application_service.create_application(data)
 
@@ -31,40 +33,53 @@ def test_create_valid_application_success():
     pytest.param({
         "company": "Google",
         "title": "Software Engineer",
-        "status": "WRONG_STATUS"
+        "status": "WRONG_STATUS",
+        "user_id": "1"
     }, id="invalid_status"),
     pytest.param({
         "company": "Google",
         # "title": "Software Engineer",
-        "status": "interview"
+        "status": "interview",
+        "user_id": "1"
     }, id="missing_field"),
         pytest.param({
         "company": "Google",
         "title": None,
-        "status": "interview"
+        "status": "interview",
+        "user_id": "1"
     }, id="null_title"),
     pytest.param({
         "company": 123,
         "title": "Software Engineer",
-        "status": "applied"
+        "status": "applied",
+        "user_id": "1"
     }, id="invalid_data"),
     pytest.param({
         "company": "   Google",
         "title": "Software Engineer",
         "status": "applied",
+        "user_id": "1",
         "banana": "Google"
     }, id="invalid_field"),
     pytest.param({
         "company": "Bosch",
         "title": "Software Engineer",
         "status": "interview",
-        "date_applied": None
+        "date_applied": None,
+        "user_id": "1"
     }, id="date_none"),
     pytest.param({
         "company": "     ",
         "title": "Software Engineer",
         "status": "interview",
+        "user_id": "1",
     }, id="only_whitespace"),
+    pytest.param({
+        "company": "Google",
+        "title": "Software Engineer",
+        "status": "interview",
+        # "user_id": "1",
+    }, id="missing_user_id"),
     pytest.param([], id="not_dict"),
     ])
 def test_create_application_failure(data):
@@ -74,7 +89,8 @@ def test_get_applications_success():
     data2 = {
         "company": "Bosch",
         "title": "Junior Engineer",
-        "status": "interview"
+        "status": "interview",
+        "user_id": "1"
     }
 
     app1 = create_test_application()
@@ -94,6 +110,37 @@ def test_get_applications_success():
     assert get_app_2["title"] == "Junior Engineer"
     assert get_app_2["status"] == "interview"
 
+@pytest.mark.parametrize("user_id, length",
+    [
+        pytest.param(1, 2, id="success"),
+        pytest.param(9999, 0, id="failure")
+    ])
+def test_get_protected_applications(user_id, length):
+    app_2 = {
+        "company": "Bosch",
+        "title": "Junior Engineer",
+        "status": "interview",
+        "user_id": "1"
+    }
+
+    app1 = create_test_application()
+    app2 = application_service.create_application(app_2)
+
+    user_credentials = {
+        "email": "    USER@gmail.com  ",
+        "password": "  passwordtenchars  ",
+    }
+
+    user = register_user(user_credentials)
+
+    # service function doesn't require the user to be logged in, only the route does
+    # logged_user_jwt = login_user(user_credentials)
+
+    # for user privacy, to_dict excludes user_id
+    protected_apps = application_service.get_applications_protected(user_id)
+    assert len(protected_apps) == length
+
+# should a user be able to change ownership of user_id from applications? (admin user with privileges?)
 def test_modify_application_success():
     modified_data = {
     "title": "Junior Engineer",
@@ -124,8 +171,7 @@ def test_delete_application_success():
 
     application_service.delete_application(app["id"])
 
-    with pytest.raises(ResourceNotFoundError):
-        application_service.get_application_by_id(app["id"])
+    raise_error(ResourceNotFoundError, "get_application_by_id", app["id"])
 
 
 def test_access_nonexistent_id():
@@ -133,13 +179,11 @@ def test_access_nonexistent_id():
         "company": "Google",
         "title": "Software Engineer",
         "status": "applied",
-        "date_interview": "2026-12-12"
+        "date_interview": "2026-12-12",
+        "user_id": "1"
     }
 
     app = application_service.create_application(data)
 
-    with pytest.raises(ResourceNotFoundError):
-        application_service.modify_application(app["id"]+1, {"company": "Bosch"})
-
-    with pytest.raises(ResourceNotFoundError):
-        application_service.delete_application(app["id"]+1)
+    raise_error(ResourceNotFoundError, "modify_application", app["id"]+1, {"company": "Bosch"})
+    raise_error(ResourceNotFoundError, "delete_application", app["id"]+1)

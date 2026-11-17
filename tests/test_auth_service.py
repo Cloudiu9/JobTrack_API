@@ -1,9 +1,12 @@
+from datetime import timedelta
+
+from flask_jwt_extended import decode_token
 import pytest
-from db_alchemy import retrieve_users_all_alchemy
+from app import app
 from models.user import User
 from security import verify_password
 from services import auth_service
-from exceptions import DuplicateEmailError, ValidationError
+from exceptions import AuthenticationError, DuplicateEmailError, ValidationError
 from sqlalchemy import select
 
 
@@ -94,3 +97,78 @@ def test_empty_database():
 
     assert isinstance(all_users, list)
     assert len(all_users) == 0
+
+def test_user_login_success():
+    user = register_test_user()
+
+    user_credentials = {
+        "email": "    USER@gmail.com  ",
+        "password": "  passwordtenchars  ",
+    }
+
+    with app.app_context():
+        logged_user_jwt = auth_service.login_user(user_credentials)
+        decoded_jwt = decode_token(logged_user_jwt)
+
+    assert logged_user_jwt is not None
+    assert decoded_jwt["sub"] == str(user["id"])
+
+    # 15 minutes
+    valid_time = decoded_jwt["exp"] - decoded_jwt["iat"]
+    assert valid_time == 15*60
+
+@pytest.mark.parametrize("invalid_credentials, error", [
+    pytest.param({
+
+    },
+    ValidationError,
+    id="empty_dict"),
+    pytest.param({
+        # "email": "    INVALID@gmail.com  ",
+        "password": "  passwordtenchars  "
+    },
+    ValidationError,
+    id="missing_email"),
+    pytest.param({
+        "email": "    INVALID@gmail.com  ",
+        # "password": "  passwordtenchars  "
+    },
+    ValidationError,
+    id="missing_password"),
+    pytest.param({
+        "email": "    USER@gmail.com  ",
+        "password": "  INVALID_PASSWORD  "
+    },
+    AuthenticationError,
+    id="incorrect_password"),
+    pytest.param({
+        "email": 123,
+        "password": "  INVALID_PASSWORD  "
+    },
+    ValidationError,
+    id="invalid_email"),
+    pytest.param({
+        "email": "    USER@gmail.com  ",
+        "password": 123
+    },
+    ValidationError,
+    id="invalid_password"),
+    pytest.param({
+        "email": "    USER@gmail.com  ",
+        "password": "  INVALID_PASSWORD  ",
+        "INVALID_FIELD": "INVALID_VALUE"
+    },
+    ValidationError,
+    id="invalid_field"),
+    pytest.param({
+        "email": "    USER@gmail.com  ",
+        "password": "short"
+    },
+    ValidationError,
+    id="short_pass"),
+])
+def test_user_login_failure(invalid_credentials, error):
+    register_test_user()
+
+    with app.app_context():
+        raise_error(error, "login_user", invalid_credentials)

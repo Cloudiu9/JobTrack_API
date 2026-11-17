@@ -57,6 +57,7 @@ def retrieve_applications_protected_alchemy(session, user_id):
     stmt = select(Application).where(Application.user_id == user_id).order_by(Application.id)
     applications = session.scalars(stmt).all()
 
+    # for user privacy, to_dict excludes user_id
     user_apps = [app.to_dict() for app in applications]
 
     return user_apps

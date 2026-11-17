@@ -19,6 +19,7 @@ class CreateApplicationRequest(BaseModel):
     date_applied: date = Field(default=None) # type: ignore # this can be omitted since it has a default, but can't be None
     status: Literal["applied", "interview"]
     date_interview: date | None = None
+    user_id: int
 
 
 # User
