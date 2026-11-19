@@ -34,26 +34,35 @@ def get_apps_protected():
 
 # create new app
 @application_bp.route("", methods=["POST"])
+@jwt_required()
 def create_app():
+    user_id = int(get_jwt_identity())
+
     data = request.get_json()
 
-    new_application = create_application(data)
+    new_application = create_application(data, user_id)
 
     return jsonify(new_application), 201
 
 # modify existing app
 @application_bp.route("/<int:app_id>", methods=["PATCH"])
+@jwt_required()
 def modify(app_id):
+    user_id = int(get_jwt_identity())
+
     data = request.get_json()
 
-    app_data = modify_application(app_id, data)
+    app_data = modify_application(app_id, data, user_id)
 
     return jsonify(app_data), 200
     
 
 # delete app
 @application_bp.route("/<int:app_id>", methods=["DELETE"])
+@jwt_required()
 def delete(app_id):
-    delete_application(app_id)
+    user_id = int(get_jwt_identity())
+
+    delete_application(app_id, user_id)
 
     return "", 204

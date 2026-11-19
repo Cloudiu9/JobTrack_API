@@ -32,6 +32,13 @@ SessionFactory = sessionmaker(
     bind=engine,
 )
 
+# HELPER
+def _get_user_application(session, app_id: int, user_id: int) -> Application | None:
+    application = session.get(Application, app_id)
+    if application is None or application.user_id != user_id:
+        return None
+    return application
+
 # APPLICATIONS
 
 def retrieve_applications_all_alchemy(session):
@@ -83,10 +90,10 @@ def insert_application_alchemy(session, data):
 
     return app.to_dict()
 
-def update_application_id_alchemy(session, app_id, data):
+def update_application_id_alchemy(session, app_id, data, user_id):
     # if not data:
     #     return None
-    application = session.get(Application, app_id)
+    application = _get_user_application(session, app_id, user_id)
 
     if application is None:
         return None
@@ -111,8 +118,8 @@ def update_application_id_alchemy(session, app_id, data):
 
     return application.to_dict()
 
-def delete_application_id_alchemy(session, app_id):
-    application = session.get(Application, app_id)
+def delete_application_id_alchemy(session, app_id, user_id):
+    application = _get_user_application(session, app_id, user_id)
 
     if application is None:
         return None

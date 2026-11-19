@@ -1,36 +1,8 @@
 from datetime import datetime, timedelta
-from flask_jwt_extended import create_access_token
 from freezegun import freeze_time
 import pytest
-from models.user import User
-from sqlalchemy import select
-from services import auth_service
-from security import verify_password
 
 NON_EXISTENT_ID = 999999
-
-@pytest.fixture
-def existing_user(client):
-    """Creates a valid user for the current test. Also tests password whitespace preservation."""
-    payload = {
-        "email": "test@gmail.com", 
-        "password": "     TEST PASSWORD123"
-    }
-    response = client.post("/auth/register", json=payload)
-
-    with auth_service.SessionFactory() as session:
-        stored_user = session.scalar(
-            select(User).where(User.email == "test@gmail.com")
-        )
-
-    # user_data = {k:v for k, v in stored_user.__dict__.items() if k != '_sa_instance_state'}
-    # print(user_data)
-
-    assert stored_user is not None
-    assert response.status_code == 201
-    assert verify_password(stored_user.password_hash, "     TEST PASSWORD123")
-
-    return response.json
 
 def test_get_all_users_success(client, existing_user):
     payload2 = {
@@ -198,19 +170,8 @@ def test_post_login_failure(client, payload, error_code, error):
     assert response.status_code == error_code
     assert response.status == error
 
-def test_post_secure_success(client, existing_user):
-    user_data = {
-        "email": "test@gmail.com", 
-        "password": "     TEST PASSWORD123"
-    }
-
-    login_response = client.post("/auth/login", json=user_data)
-
-    jwt_auth = {
-        "Authorization" : f"Bearer {login_response.json["access_token"]}"
-    }
-
-    response = client.get("/auth/secure", headers=jwt_auth)
+def test_post_secure_success(client, existing_user, auth_headers):
+    response = client.get("/auth/secure", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json["user_id"] == existing_user["id"]

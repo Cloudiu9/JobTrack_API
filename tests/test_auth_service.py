@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 from flask_jwt_extended import decode_token
 import pytest
 from app import app

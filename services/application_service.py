@@ -55,7 +55,7 @@ def get_applications_protected(user_id):
         apps_protected = retrieve_applications_protected_alchemy(session, user_id)
     return apps_protected
 
-def create_application(data):
+def create_application(data: dict, user_id: int):
     # Can be ommitted now, thanks to Pydantic
     # if not isinstance(data, dict):
     #     raise ValidationError("Body must be a valid JSON.")
@@ -87,6 +87,9 @@ def create_application(data):
     # enforce_rules(validated_pydantic_data)
     # validate_dates(validated_pydantic_data)
 
+    # insert trusted user_id
+    validated_pydantic_data["user_id"] = user_id
+
     # .begin() automatically handles (try/except) commit() and rollback()
     with SessionFactory.begin() as session:
         new_job = insert_application_alchemy(session, validated_pydantic_data)
@@ -94,7 +97,7 @@ def create_application(data):
     return new_job
 
 
-def modify_application(app_id, data):
+def modify_application(app_id: int, data: dict, user_id: int):
     if not isinstance(data, dict):
         raise ValidationError( "Body must be a valid JSON.")
 
@@ -113,19 +116,20 @@ def modify_application(app_id, data):
     validate_dates(data)
     
     if "status" in data and data["status"] not in STATUS:
-        raise ValidationError("Incorrect status.") 
+        raise ValidationError("Incorrect status.")
 
+    # is this even needed? should I pass it in update_application_id_alchemy()? 
     with SessionFactory.begin() as session:
-        application_to_modify = update_application_id_alchemy(session, app_id, data)
+        application_to_modify = update_application_id_alchemy(session, app_id, data, user_id)
 
     if application_to_modify is None:
         raise ResourceNotFoundError("Application not found.")
     
     return application_to_modify
 
-def delete_application(app_id):
+def delete_application(app_id: int, user_id: int):
     with SessionFactory.begin() as session:
-        result = delete_application_id_alchemy(session, app_id)
+        result = delete_application_id_alchemy(session, app_id, user_id)
 
     if result is None:
         raise ResourceNotFoundError("Could not find application to delete.")
