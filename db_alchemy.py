@@ -41,6 +41,7 @@ def _get_user_application(session, app_id: int, user_id: int) -> Application | N
 
 # APPLICATIONS
 
+# remove unprotected version?
 def retrieve_applications_all_alchemy(session):
     stmt = select(Application).order_by(Application.id)
     applications = session.scalars(stmt).all()
@@ -69,6 +70,7 @@ def retrieve_applications_protected_alchemy(session, user_id):
 
     return user_apps
 
+# remove unprotected version?
 def retrieve_application_id_alchemy(session, app_id):
     # OLD
     # stmt = select(Application).where(Application.id == app_id)
@@ -76,6 +78,15 @@ def retrieve_application_id_alchemy(session, app_id):
 
     # cleaner alternative, fetches directly by primary key
     application = session.get(Application, app_id)
+
+    if application is None:
+        return None
+    
+    return application.to_dict()
+
+def retrieve_application_protected_id_alchemy(session, app_id, user_id):
+    # cleaner alternative, fetches directly by primary key
+    application = _get_user_application(session, app_id, user_id)
 
     if application is None:
         return None

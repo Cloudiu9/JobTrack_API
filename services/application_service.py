@@ -1,5 +1,5 @@
 from datetime import datetime
-from db_alchemy import SessionFactory, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, retrieve_applications_protected_alchemy, update_application_id_alchemy, delete_application_id_alchemy
+from db_alchemy import SessionFactory, retrieve_application_protected_id_alchemy, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, retrieve_applications_protected_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 from models.application import STATUS, ALLOWED_KEYS
 from exceptions import ResourceNotFoundError, ValidationError
 from pydantic_rules import CreateApplicationRequest
@@ -35,22 +35,16 @@ def enforce_rules(data):
     if not all(isinstance(value,str) or key == "date_interview" for key, value in data.items()):
         raise ValidationError("Non-string field found.")
 
-def get_application_by_id(app_id):
+def get_application_by_id(app_id, user_id):
     with SessionFactory() as session:
-        application = retrieve_application_id_alchemy(session, app_id)
+        application = retrieve_application_protected_id_alchemy(session, app_id, user_id)
 
     if application is None:
         raise ResourceNotFoundError("Application not found.")
 
     return application
 
-
-def get_applications():
-    with SessionFactory() as session:
-        all_apps = retrieve_applications_all_alchemy(session)
-    return all_apps
-
-def get_applications_protected(user_id):
+def get_applications(user_id):
     with SessionFactory() as session:
         apps_protected = retrieve_applications_protected_alchemy(session, user_id)
     return apps_protected

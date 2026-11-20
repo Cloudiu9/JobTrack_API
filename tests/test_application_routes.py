@@ -1,7 +1,7 @@
 import pytest
 from app import app as flask_app
 from models.application import Application
-from services import application_service 
+from services import application_service
 
 NON_EXISTENT_ID = 999999
 
@@ -26,7 +26,7 @@ def existing_application(client, auth_headers):
         "status" : "applied", 
         "date_applied": '2026-10-26'
     }
-    response = client.post("/applications", json=payload, headers=auth_headers)
+    response = client.post("/applications", json=payload, headers=auth_headers())
 
     assert response.status_code == 201
     return response.json
@@ -39,11 +39,11 @@ def test_get_all_applications_success(client, existing_application, auth_headers
         "date_applied": '2026-10-29'
     }
 
-    create_response = client.post("/applications", json=payload2, headers=auth_headers)
+    create_response = client.post("/applications", json=payload2, headers=auth_headers())
 
     assert create_response.status_code == 201
 
-    response = client.get("/applications")
+    response = client.get("/applications", headers=auth_headers())
 
     assert response.status_code == 200
     body = response.json
@@ -77,23 +77,23 @@ def test_get_all_applications_success(client, existing_application, auth_headers
 
 
 def test_get_all_applications_empty(client, auth_headers):
-    # auth_headers not needed for get right now, will change eventually?
-    response = client.get("/applications", headers=auth_headers)
+    # auth_headers() not needed for get right now, will change eventually?
+    response = client.get("/applications", headers=auth_headers())
 
     assert response.status_code == 200
     assert isinstance(response.json, list)
     assert response.json == []
 
-def test_get_application_success(client, existing_application):
+def test_get_application_success(client, existing_application, auth_headers):
     app_id = existing_application["id"]
-    response = client.get(f"/applications/{app_id}")
+    response = client.get(f"/applications/{app_id}", headers=auth_headers())
 
     assert response.status_code == 200
     assert response.json == existing_application
 
-def test_get_nonexistent_application(client):
+def test_get_nonexistent_application(client, auth_headers):
     nonexistent_app_id = NON_EXISTENT_ID
-    response = client.get(f"/applications/{nonexistent_app_id}")
+    response = client.get(f"/applications/{nonexistent_app_id}", headers=auth_headers())
 
     assert response.status_code == 404
     assert response.json["error"] == "MISSING_ERROR"
@@ -107,7 +107,7 @@ def test_post_success(client, auth_headers):
         "date_applied": '2026-10-26'
     }
 
-    response = client.post("/applications", json=payload, headers=auth_headers)
+    response = client.post("/applications", json=payload, headers=auth_headers())
 
     assert response.status_code == 201
 
@@ -144,13 +144,26 @@ def test_post_success(client, auth_headers):
     ),
 ])
 def test_post_failure(client, payload, expected_details, auth_headers):
-    response = client.post("/applications", json=payload, headers=auth_headers)
+    response = client.post("/applications", json=payload, headers=auth_headers())
 
     # print(dir(response))
 
     assert response.status_code == 400
     assert response.json["error"] == "VALIDATION_ERROR"
     assert expected_details in response.json["details"]
+
+def test_post_applications_unauthorized(client):
+    payload = {
+        "company": "Kaufland",
+        "title": "Senior Engineer",
+        "status" : "interview",
+        "date_applied": '2026-10-29'
+    }
+
+    # no auth_headers() should result in a 401 Unauthorized
+    response = client.post("/applications", json=payload)
+
+    assert response.status_code == 401
 
 def test_patch_success(client, existing_application, auth_headers):
     modified_payload = {
@@ -159,11 +172,11 @@ def test_patch_success(client, existing_application, auth_headers):
     }
 
     app_id = existing_application["id"]
-    modified_application = client.patch(f"/applications/{app_id}", json=modified_payload, headers=auth_headers)
+    modified_application = client.patch(f"/applications/{app_id}", json=modified_payload, headers=auth_headers())
 
     assert modified_application.status_code == 200
 
-    response = client.get(f"/applications/{app_id}")
+    response = client.get(f"/applications/{app_id}", headers=auth_headers())
     assert response.status_code == 200
     assert response.json["title"] == "Senior Software Engineer"
     assert response.json["status"] == "interview"
@@ -188,7 +201,7 @@ def test_patch_success(client, existing_application, auth_headers):
 ])
 def test_patch_failure(client, existing_application, payload, expected_details, auth_headers):
     app_id = existing_application["id"]
-    modified_application = client.patch(f"/applications/{app_id}", json=payload, headers=auth_headers)
+    modified_application = client.patch(f"/applications/{app_id}", json=payload, headers=auth_headers())
 
     assert modified_application.status_code == 400
     assert modified_application.json["error"] == "VALIDATION_ERROR"
@@ -198,13 +211,13 @@ def test_patch_failure_does_not_modify_application(client, existing_application,
     wrong_application = client.patch(f"/applications/{existing_application["id"]}", json={
     "title": "This change must not persist",
     "status": "WRONG_STATUS",
-}, headers=auth_headers)
+}, headers=auth_headers())
 
     assert wrong_application.status_code == 400
 
     app_id = existing_application["id"]
 
-    response = client.get(f"/applications/{app_id}")
+    response = client.get(f"/applications/{app_id}", headers=auth_headers())
     assert response.status_code == 200
     assert response.json == existing_application
 
@@ -215,7 +228,7 @@ def test_unexpected_error_returns_500(client, existing_application, monkeypatch,
 
     monkeypatch.setattr(application_service,"update_application_id_alchemy", mocked_update_id_alchemy)
 
-    response = client.patch(f"/applications/{app_id}", json={"title": "VALID_TITLE"}, headers=auth_headers)
+    response = client.patch(f"/applications/{app_id}", json={"title": "VALID_TITLE"}, headers=auth_headers())
 
     # print(response.json)
     assert response.status_code == 500
@@ -227,26 +240,37 @@ def test_patch_transaction_rolls_back_on_exception(client, existing_application,
 
     monkeypatch.setattr(application_service,"update_application_id_alchemy", mocked_update_id_alchemy)
 
-    modified_application = client.patch(f"/applications/{app_id}", json={"title": "VALID_TITLE"}, headers=auth_headers)
+    modified_application = client.patch(f"/applications/{app_id}", json={"title": "VALID_TITLE"}, headers=auth_headers())
 
     assert modified_application.status_code == 500
     assert modified_application.json["error"] == "INTERNAL_SERVER_ERROR"
 
-    response = client.get(f"/applications/{app_id}")
+    response = client.get(f"/applications/{app_id}", headers=auth_headers())
 
     assert response.status_code == 200
     assert response.json == existing_application
 
+def test_patch_applications_unauthorized(client, existing_application):
+    modified_payload = {
+        "title": "Senior Software Engineer",
+        "status" : "interview"
+    }
 
-def test_unknown_route_returns_404_json(client):
-    response = client.get("/this-route-does-not-exist")
+    app_id = existing_application["id"]
+    # no auth_headers() should result in a 401 Unauthorized
+    modified_application = client.patch(f"/applications/{app_id}", json=modified_payload)
+
+    assert modified_application.status_code == 401
+
+def test_unknown_route_returns_404_json(client, auth_headers):
+    response = client.get("/this-route-does-not-exist", headers=auth_headers())
 
     assert response.status_code == 404
     assert response.is_json
     assert response.json["error"] == "NOT_FOUND"
 
-def test_unsupported_method_returns_405_json(client):
-    response = client.put("/applications")
+def test_unsupported_method_returns_405_json(client, auth_headers):
+    response = client.put("/applications", headers=auth_headers())
 
     assert response.status_code == 405
     assert response.is_json
@@ -258,7 +282,7 @@ def test_nonexistent_patch(client, auth_headers):
         "status" : "interview"
     }
     
-    modified_application = client.patch(f"/applications/{NON_EXISTENT_ID}", json=modified_payload, headers=auth_headers)
+    modified_application = client.patch(f"/applications/{NON_EXISTENT_ID}", json=modified_payload, headers=auth_headers())
 
     assert modified_application.status_code == 404
     assert modified_application.json["error"] == "MISSING_ERROR"
@@ -266,11 +290,11 @@ def test_nonexistent_patch(client, auth_headers):
 
 def test_delete_success(client, existing_application, auth_headers):
     app_id = existing_application["id"]
-    response = client.delete(f"/applications/{app_id}", headers=auth_headers)
+    response = client.delete(f"/applications/{app_id}", headers=auth_headers())
 
     assert response.status_code == 204
 
-    response_to_fail = client.get(f"/applications/{app_id}")
+    response_to_fail = client.get(f"/applications/{app_id}", headers=auth_headers())
 
     assert response_to_fail.status_code == 404
     assert response_to_fail.json["error"] == "MISSING_ERROR"
@@ -278,33 +302,30 @@ def test_delete_success(client, existing_application, auth_headers):
 
 def test_missing_delete(client, auth_headers):
     nonexistent_app_id = NON_EXISTENT_ID
-    response = client.delete(f"/applications/{nonexistent_app_id}", headers=auth_headers)
+    response = client.delete(f"/applications/{nonexistent_app_id}", headers=auth_headers())
 
     assert response.status_code == 404
     assert response.json["error"] == "MISSING_ERROR"
     assert "Could not find application to delete" in response.json["details"]
 
-def test_post_applications_unauthorized(client):
-    payload = {
-        "company": "Kaufland",
-        "title": "Senior Engineer",
-        "status" : "interview",
-        "date_applied": '2026-10-29'
-    }
-
-    # no auth_headers should result in a 401 Unauthorized
-    response = client.post("/applications", json=payload)
-
-    assert response.status_code == 401
-
-def test_patch_applications_unauthorized(client, existing_application):
-    modified_payload = {
+@pytest.mark.parametrize("method, payload",
+    [
+     pytest.param("get", None, id="get"),                      
+     pytest.param("patch", {
         "title": "Senior Software Engineer",
         "status" : "interview"
-    }
+    }, id="patch"),                     
+     pytest.param("delete", None, id="delete")                        
+    ])
+def test_protected_application_404(method, payload, client, existing_application, auth_headers):
+    # User 1 already created by existing_application
+    user_2_header = auth_headers(email="user2@gmail.com")
 
     app_id = existing_application["id"]
-    # no auth_headers should result in a 401 Unauthorized
-    modified_application = client.patch(f"/applications/{app_id}", json=modified_payload)
 
-    assert modified_application.status_code == 401
+    request_func = getattr(client, method)
+
+    # since get and delete have payload=None, only patch sends json=payload as intended
+    response = request_func(f"/applications/{app_id}", json=payload, headers=user_2_header)
+
+    assert response.status_code == 404

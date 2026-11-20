@@ -6,6 +6,10 @@ from services import application_service
 from services.auth_service import register_user
 
 def raise_error(error, func_name, *args):
+    """
+    Example use case: 
+        raise_error(ResourceNotFoundError, "modify_application", app["id"], modified_data, user2["id"])
+    """
     target_func = getattr(application_service, func_name)
 
     with pytest.raises(error):
@@ -97,9 +101,9 @@ def test_get_applications_success():
     app1 = create_test_application(user["id"])
     app2 = application_service.create_application(data2, user["id"])
 
-    get_all_apps = application_service.get_applications()
-    get_app_1 = application_service.get_application_by_id(app1["id"])
-    get_app_2 = application_service.get_application_by_id(app2["id"])
+    get_all_apps = application_service.get_applications(user["id"])
+    get_app_1 = application_service.get_application_by_id(app1["id"], user["id"])
+    get_app_2 = application_service.get_application_by_id(app2["id"], user["id"])
 
     assert isinstance(get_all_apps, list)
     assert len(get_all_apps) == 2
@@ -118,6 +122,7 @@ def test_get_applications_success():
     ])
 def test_get_protected_applications(target_user_id, length):
     user = create_test_user()
+    user2 = create_test_user(email="user2@gmail.com")
 
     app_2 = {
         "company": "Bosch",
@@ -129,12 +134,22 @@ def test_get_protected_applications(target_user_id, length):
     create_test_application(user["id"])
     application_service.create_application(app_2, user["id"])
 
+    # create application belonging to second user
+    application_service.create_application(app_2, user2["id"])
+
     # service function doesn't require the user to be logged in, only the route does
     # logged_user_jwt = login_user(user_credentials)
 
     # for user privacy, to_dict excludes user_id
-    protected_apps = application_service.get_applications_protected(target_user_id)
-    assert len(protected_apps) == length
+    protected_apps_1 = application_service.get_applications(target_user_id)
+    assert len(protected_apps_1) == length
+
+    # user 2 doesn't see user 1's applications
+    protected_apps_2 = application_service.get_applications(user2["id"])
+    assert len(protected_apps_2) == 1
+    assert protected_apps_2[0]["id"] == 3
+    assert protected_apps_2[0]["company"] == "Bosch"
+    assert protected_apps_2[0]["title"] == "Junior Engineer"
 
 def test_modify_application_success():
     user = create_test_user()
@@ -149,7 +164,7 @@ def test_modify_application_success():
 
     application_service.modify_application(app["id"], modified_data, user["id"])
 
-    modified_app = application_service.get_application_by_id(app["id"])
+    modified_app = application_service.get_application_by_id(app["id"], user["id"])
 
     assert modified_app["title"] == "Junior Engineer"
     assert modified_app["date_applied"] == "2026-10-10"
@@ -157,19 +172,33 @@ def test_modify_application_success():
     assert modified_app["company"] == "Google"
     assert modified_app["status"] == "applied"
 
+def test_modify_applications_other_user():
+    user = create_test_user()
+    user2 = create_test_user(email="user2@gmail.com")
+
+    modified_data = {
+    "title": "Junior Engineer",
+    "date_applied": "2026-10-10",
+    "date_interview": None
+    }
+    
+    app = create_test_application(user["id"])
+
+    raise_error(ResourceNotFoundError, "modify_application", app["id"], modified_data, user2["id"])
+
 def test_delete_application_success():
     user = create_test_user()
     app = create_test_application(user["id"])
 
     assert app["title"] == "Software Engineer"
 
-    get_app_1 = application_service.get_application_by_id(app["id"])
+    get_app_1 = application_service.get_application_by_id(app["id"], user["id"])
 
     assert get_app_1["id"] == app["id"]
 
     application_service.delete_application(app["id"], user["id"])
 
-    raise_error(ResourceNotFoundError, "get_application_by_id", app["id"])
+    raise_error(ResourceNotFoundError, "get_application_by_id", app["id"], user["id"])
 
 
 def test_access_nonexistent_id():

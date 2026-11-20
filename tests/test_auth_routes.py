@@ -5,6 +5,9 @@ import pytest
 NON_EXISTENT_ID = 999999
 
 def test_get_all_users_success(client, existing_user):
+    # requires calling this as a function, since it's now a fixture factory
+    existing_user = existing_user()
+
     payload2 = {
         "email": "test2@gmail.com",
         "password": "     TEST PASSWORD123"
@@ -17,11 +20,10 @@ def test_get_all_users_success(client, existing_user):
     response = client.get("/auth")
 
     assert response.status_code == 200
-    body = response.json
+    print(response.json)
 
-    assert len(body) == 2
-
-    assert existing_user in body
+    assert len(response.json) == 2
+    assert existing_user in response.json
 
 # no user is created since existing_user isn't provided as an argument
 def test_get_all_users_empty(client):
@@ -32,6 +34,8 @@ def test_get_all_users_empty(client):
     assert response.json == []
 
 def test_get_user_success(client, existing_user):
+    existing_user = existing_user()
+
     user_id = existing_user["id"]
     response = client.get(f"/auth/{user_id}")
     
@@ -53,6 +57,8 @@ def test_get_nonexistent_user(client):
     assert "User not found." in response.json["details"]
 
 def test_post_register_duplicate_email(client, existing_user):
+    existing_user = existing_user()
+
     payload = {
         "email": "test@gmail.com",
         "password": "   TEST1234567"
@@ -100,6 +106,8 @@ def test_post_register_failure(client, payload):
     assert response.json["error"] == "VALIDATION_ERROR"
 
 def test_post_login_success(client, existing_user):
+    existing_user = existing_user()
+
     user_data = {
         "email": "test@gmail.com", 
         "password": "     TEST PASSWORD123"
@@ -171,7 +179,9 @@ def test_post_login_failure(client, payload, error_code, error):
     assert response.status == error
 
 def test_post_secure_success(client, existing_user, auth_headers):
-    response = client.get("/auth/secure", headers=auth_headers)
+    existing_user = existing_user()
+
+    response = client.get("/auth/secure", headers=auth_headers())
 
     assert response.status_code == 200
     assert response.json["user_id"] == existing_user["id"]
@@ -205,6 +215,8 @@ def test_post_secure_invalid_jwt(client):
         {"user_id": 1}, id="valid_jwt")
     ])
 def test_post_secure_token_expiration(client, existing_user, time, status_code, json):
+    existing_user = existing_user()
+
     start_time = datetime(2026, 11, 13, 12, 0, 0)
     with freeze_time(start_time):
         login_res = client.post(

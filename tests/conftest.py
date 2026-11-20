@@ -61,34 +61,53 @@ def patch_user_factory(monkeypatch, test_session_factory):
 
 @pytest.fixture
 def existing_user(client):
-    """Creates a valid user for the current test. Also tests password whitespace preservation."""
-    payload = {
-        "email": "test@gmail.com", 
-        "password": "     TEST PASSWORD123"
-    }
-    response = client.post("/auth/register", json=payload)
+    """Fixture factory. Requires being called as a function first before being available.
+    
+    Creates a valid user for the current test. Also tests password whitespace preservation."""
+    def _get_existing_user(email="test@gmail.com"):
+        with auth_service.SessionFactory() as session:
+            stored_user = session.scalar(
+                select(User).where(User.email == email)
+            )
+            if stored_user:
+                return {"id": stored_user.id, "email": stored_user.email}
+        payload = {
+            "email": email, 
+            "password": "     TEST PASSWORD123"
+        }
+        response = client.post("/auth/register", json=payload)
 
-    with auth_service.SessionFactory() as session:
-        stored_user = session.scalar(
-            select(User).where(User.email == "test@gmail.com")
-        )
+        with auth_service.SessionFactory() as session:
+            stored_user = session.scalar(
+                select(User).where(User.email == email)
+            )
 
-    # user_data = {k:v for k, v in stored_user.__dict__.items() if k != '_sa_instance_state'}
-    # print(user_data)
+        # user_data = {k:v for k, v in stored_user.__dict__.items() if k != '_sa_instance_state'}
+        # print(user_data)
 
-    assert stored_user is not None
-    assert response.status_code == 201
-    assert verify_password(stored_user.password_hash, "     TEST PASSWORD123")
+        assert stored_user is not None
+        assert response.status_code == 201
+        assert verify_password(stored_user.password_hash, "     TEST PASSWORD123")
 
-    return response.json
+        return response.json
+    return _get_existing_user
 
 @pytest.fixture
 def auth_headers(client, existing_user):
-    login_payload = {
-        "email": "test@gmail.com", 
-        "password": "     TEST PASSWORD123"
-    }
-    response = client.post("/auth/login", json=login_payload)
-    assert response.status_code == 200
-    token = response.json["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    """
+    Fixture factory. Requires being called as a function first before being available.
+
+    Creates the default user's JWT auth header.
+    """
+    def _get_headers(email="test@gmail.com"):
+        existing_user(email=email)
+
+        login_payload = {
+            "email": email, 
+            "password": "     TEST PASSWORD123"
+        }
+        response = client.post("/auth/login", json=login_payload)
+        assert response.status_code == 200
+        token = response.json["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+    return _get_headers
