@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: job_tracker_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-job_tracker}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: job_tracker_api
+    command: >
+      sh -c "alembic upgrade head && python app.py"
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-job_tracker}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-super-secret}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

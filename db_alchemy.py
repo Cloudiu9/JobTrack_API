@@ -2,10 +2,8 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, select
 from sqlalchemy.orm import sessionmaker
-
 from models.application import Application
 from models.user import User
-from security import verify_password
 
 load_dotenv()
 
