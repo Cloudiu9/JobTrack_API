@@ -23,15 +23,17 @@ def get_app_protected(app_id):
 @jwt_required()
 def get_apps_protected():
     page = request.args.get("page", default=1, type=int)
+    limit = request.args.get("limit", default=4, type=int)
 
-    # Guard against negative numbers
-    page = max(1, page)
+    # Enforce safety bounds
+    page = max(1, page if page is not None else 1)
+    limit = max(1, min(limit if limit is not None else 4, 50)) # clamp limit 1-50
 
     user_id = int(get_jwt_identity())
 
-    user_apps = get_applications(user_id, page)
+    response = get_applications(user_id, page, limit)
 
-    return jsonify(user_apps)
+    return jsonify(response)
 
 # create new app
 @application_bp.route("", methods=["POST"])

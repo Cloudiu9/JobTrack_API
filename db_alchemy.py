@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine, select
+from sqlalchemy import URL, create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 from models.application import Application
 from models.user import User
@@ -43,18 +43,21 @@ def retrieve_applications_alchemy(session, user_id: int, page: int, limit: int):
     # offset = skip offset many applications
     # if on first page, don't skip any, get limit first apps
     # if page > 1, skip first page, decrement page by 1 because first page is 1 not 0
-    if page == 1:
-        offset = 0
-    else:
-        offset = (page - 1) * limit
+    offset = (page - 1) * limit
+    base_filter = Application.user_id == user_id
 
-    stmt = select(Application).where(Application.user_id == user_id).order_by(Application.id).limit(limit).offset(offset)
+    count_stmt = select(func.count()).select_from(Application).where(base_filter)
+    total_count = session.scalar(count_stmt) or 0
+
+    stmt = select(Application).where(base_filter).order_by(Application.id).limit(limit).offset(offset)
+    # .all() pulls all rows into a standard Python list;
+    # without .all(), this just returns a lazy "ScalarResult" that is exhausted once looped over once
     applications = session.scalars(stmt).all()
 
     # for user privacy, to_dict excludes user_id
     user_apps = [app.to_dict() for app in applications]
 
-    return user_apps
+    return user_apps, total_count
 
 def retrieve_application_id_alchemy(session, app_id, user_id):
     # cleaner alternative, fetches directly by primary key

@@ -1,3 +1,5 @@
+import math
+
 from db_alchemy import SessionFactory, insert_application_alchemy, retrieve_application_id_alchemy, retrieve_applications_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 from models.application import STATUS, ALLOWED_KEYS
 from exceptions import ResourceNotFoundError, ValidationError
@@ -6,7 +8,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from services.helper import enforce_rules, validate_dates
 
-def get_applications(user_id: int, page:int , limit = 2):
+def get_applications(user_id: int, page:int , limit = 3):
     """
     Pagination:
 
@@ -15,8 +17,20 @@ def get_applications(user_id: int, page:int , limit = 2):
     limit -> how many items per page (harcoded for now?)
     """
     with SessionFactory() as session:
-        apps = retrieve_applications_alchemy(session, user_id, page, limit)
-    return apps
+        apps, total_apps = retrieve_applications_alchemy(session, user_id, page, limit)
+
+    total_pages = math.ceil(total_apps/limit)
+
+    json_envelope = {
+        "items": apps,
+        "total_applications": total_apps,
+        "per_page": limit,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1,
+    }
+
+    return json_envelope
 
 def get_application_by_id(app_id, user_id):
     with SessionFactory() as session:
