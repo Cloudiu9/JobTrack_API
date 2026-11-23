@@ -22,12 +22,13 @@ def get_app_protected(app_id):
 @application_bp.route("", methods=["GET"])
 @jwt_required()
 def get_apps_protected():
+    # IMP if defaults are modified from here, also modify in service
     page = request.args.get("page", default=1, type=int)
-    limit = request.args.get("limit", default=4, type=int)
+    limit = request.args.get("limit", default=3, type=int) 
 
     # Enforce safety bounds
     page = max(1, page if page is not None else 1)
-    limit = max(1, min(limit if limit is not None else 4, 50)) # clamp limit 1-50
+    limit = max(1, min(limit if limit is not None else 3, 50)) # clamp limit 1-50
 
     user_id = int(get_jwt_identity())
 

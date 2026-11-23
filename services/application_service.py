@@ -8,7 +8,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from services.helper import enforce_rules, validate_dates
 
-def get_applications(user_id: int, page:int , limit = 3):
+def get_applications(user_id: int, page = 1, limit = 3):
     """
     Pagination:
 

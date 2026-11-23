@@ -59,6 +59,31 @@ def patch_user_factory(monkeypatch, test_session_factory):
     monkeypatch.setattr(auth_service,
      "SessionFactory", test_session_factory)
 
+# service-related
+@pytest.fixture
+def setup_application_service():
+    """Fixture factory. Requires being called as a function first before being available.
+    
+    Creates a test application and test user."""
+    def _get_setup_application_serivce(email="    USER@gmail.com  ", 
+                                       data = {
+                                        "company": "Google",
+                                        "title": "Software Engineer",
+                                        "status": "applied",
+                                        "date_interview": "2026-12-12",
+                                        }
+    ):
+        new_test_user = auth_service.register_user({
+            "email": email,
+            "password": "  passwordtenchars  ",
+        })
+
+        new_test_application = application_service.create_application(data, new_test_user["id"])
+
+        return new_test_application, new_test_user
+    return _get_setup_application_serivce
+
+# route-related
 @pytest.fixture
 def existing_user(client):
     """Fixture factory. Requires being called as a function first before being available.

@@ -31,15 +31,17 @@ def existing_application(client, auth_headers):
     assert response.status_code == 201
     return response.json
 
+# GET
+
 def test_get_all_applications_success(client, existing_application, auth_headers):
-    payload2 = {
+    payload = {
         "company": "Kaufland",
         "title": "Senior Engineer",
         "status" : "interview",
         "date_applied": '2026-10-29'
     }
 
-    create_response = client.post("/applications", json=payload2, headers=auth_headers())
+    create_response = client.post("/applications", json=payload, headers=auth_headers())
 
     assert create_response.status_code == 201
 
@@ -48,17 +50,15 @@ def test_get_all_applications_success(client, existing_application, auth_headers
     assert response.status_code == 200
     body = response.json
 
-    assert len(body) == 2
-
     # can just check this, make sure to check before popping id
-    assert existing_application in body
+    assert existing_application in body["items"]
     
-    for app in body:
+    for app in body["items"]:
         app_id = app.pop("id", None)
         assert isinstance(app_id, int)
 
 
-    assert body == [
+    assert body["items"] == [
         {
         "company": "Bosch",
         "title": "Junior Engineer",
@@ -75,14 +75,48 @@ def test_get_all_applications_success(client, existing_application, auth_headers
     }
     ]
 
+def test_get_all_applications_pagination_success(client, existing_application, auth_headers):
+    payload = {
+        "company": "Kaufland",
+        "title": "Senior Engineer",
+        "status" : "interview",
+        "date_applied": '2026-10-29'
+    }
+
+    # create two more applications
+    create_response = client.post("/applications", json=payload, headers=auth_headers())
+    assert create_response.status_code == 201
+
+    create_response = client.post("/applications", json=payload, headers=auth_headers())
+    assert create_response.status_code == 201
+
+    # page (1) and limit(2)
+    get_response_1_1 = client.get("/applications?page=1&limit=2", headers=auth_headers())
+    assert get_response_1_1.status_code == 200
+    assert len(get_response_1_1.json["items"]) == 2
+    assert get_response_1_1.json["total_applications"] == 3
+    assert get_response_1_1.json["per_page"] == 2
+    assert get_response_1_1.json["total_pages"] == 2
+    assert get_response_1_1.json["has_next"] == True
+    assert get_response_1_1.json["has_prev"] == False
+
+    # page (2) and limit(2)
+    get_response_1_1 = client.get("/applications?page=2&limit=2", headers=auth_headers())
+    assert get_response_1_1.status_code == 200
+    assert len(get_response_1_1.json["items"]) == 1
+    assert get_response_1_1.json["total_applications"] == 3
+    assert get_response_1_1.json["per_page"] == 2
+    assert get_response_1_1.json["total_pages"] == 2
+    assert get_response_1_1.json["has_next"] == False
+    assert get_response_1_1.json["has_prev"] == True
 
 def test_get_all_applications_empty(client, auth_headers):
     # auth_headers() not needed for get right now, will change eventually?
     response = client.get("/applications", headers=auth_headers())
 
     assert response.status_code == 200
-    assert isinstance(response.json, list)
-    assert response.json == []
+    assert isinstance(response.json["items"], list)
+    assert response.json["items"] == []
 
 def test_get_application_success(client, existing_application, auth_headers):
     app_id = existing_application["id"]
@@ -98,6 +132,8 @@ def test_get_nonexistent_application(client, auth_headers):
     assert response.status_code == 404
     assert response.json["error"] == "MISSING_ERROR"
     assert "Application not found." in response.json["details"]
+
+# POST
 
 def test_post_success(client, auth_headers):
     payload = {
@@ -164,6 +200,8 @@ def test_post_applications_unauthorized(client):
     response = client.post("/applications", json=payload)
 
     assert response.status_code == 401
+
+# PATCH
 
 def test_patch_success(client, existing_application, auth_headers):
     modified_payload = {
@@ -262,20 +300,6 @@ def test_patch_applications_unauthorized(client, existing_application):
 
     assert modified_application.status_code == 401
 
-def test_unknown_route_returns_404_json(client, auth_headers):
-    response = client.get("/this-route-does-not-exist", headers=auth_headers())
-
-    assert response.status_code == 404
-    assert response.is_json
-    assert response.json["error"] == "NOT_FOUND"
-
-def test_unsupported_method_returns_405_json(client, auth_headers):
-    response = client.put("/applications", headers=auth_headers())
-
-    assert response.status_code == 405
-    assert response.is_json
-    assert response.json["error"] == "METHOD_NOT_ALLOWED"
-
 def test_nonexistent_patch(client, auth_headers):
     modified_payload = {
         "title": "Senior Software Engineer",
@@ -287,6 +311,8 @@ def test_nonexistent_patch(client, auth_headers):
     assert modified_application.status_code == 404
     assert modified_application.json["error"] == "MISSING_ERROR"
     assert "Application not found" in modified_application.json["details"]
+
+# DELETE
 
 def test_delete_success(client, existing_application, auth_headers):
     app_id = existing_application["id"]
@@ -307,6 +333,8 @@ def test_missing_delete(client, auth_headers):
     assert response.status_code == 404
     assert response.json["error"] == "MISSING_ERROR"
     assert "Could not find application to delete" in response.json["details"]
+
+# AUTHORIZATION
 
 @pytest.mark.parametrize("method, payload",
     [
@@ -329,3 +357,19 @@ def test_protected_application_404(method, payload, client, existing_application
     response = request_func(f"/applications/{app_id}", json=payload, headers=user_2_header)
 
     assert response.status_code == 404
+
+# UNEXPECTED
+
+def test_unknown_route_returns_404_json(client, auth_headers):
+    response = client.get("/this-route-does-not-exist", headers=auth_headers())
+
+    assert response.status_code == 404
+    assert response.is_json
+    assert response.json["error"] == "NOT_FOUND"
+
+def test_unsupported_method_returns_405_json(client, auth_headers):
+    response = client.put("/applications", headers=auth_headers())
+
+    assert response.status_code == 405
+    assert response.is_json
+    assert response.json["error"] == "METHOD_NOT_ALLOWED"
