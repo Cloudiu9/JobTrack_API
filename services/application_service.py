@@ -1,53 +1,31 @@
-from datetime import datetime
-from db_alchemy import SessionFactory, retrieve_application_protected_id_alchemy, retrieve_applications_all_alchemy, retrieve_application_id_alchemy, insert_application_alchemy, retrieve_applications_protected_alchemy, update_application_id_alchemy, delete_application_id_alchemy
+from db_alchemy import SessionFactory, insert_application_alchemy, retrieve_application_id_alchemy, retrieve_applications_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 from models.application import STATUS, ALLOWED_KEYS
 from exceptions import ResourceNotFoundError, ValidationError
 from pydantic_rules import CreateApplicationRequest
 from pydantic import ValidationError as PydanticValidationError
 
-def validate_dates(data):
-    DATE_FIELDS = ["date_interview", "date_applied"]
+from services.helper import enforce_rules, validate_dates
 
-    for field in DATE_FIELDS:
-        if field in data:
-            value = data[field]
+def get_applications(user_id: int, page:int , limit = 2):
+    """
+    Pagination:
 
-            if data[field] is None and field == "date_interview":
-                continue
+    page -> which page number (query parameter)
 
-            if not isinstance(value, str):
-                raise ValidationError(f"The field {field} must be a string.")
-
-            try:
-                data[field] = datetime.strptime(value, "%Y-%m-%d").date()
-            except ValueError:
-                raise ValidationError(
-                    f"Invalid date format for {field}. Please use the ISO standard YYYY-MM-DD (e.g., 2026-11-13)"
-                )
-
-
-def enforce_rules(data):
-    # don't allow null, except for date_interview
-    if any((isinstance(value, str) and value.strip() == "") or (value is None and key != "date_interview") for key, value in data.items()):
-        raise ValidationError("Empty field found.") 
-    
-    # only allow strings, except for date_interview (which can be null)
-    if not all(isinstance(value,str) or key == "date_interview" for key, value in data.items()):
-        raise ValidationError("Non-string field found.")
+    limit -> how many items per page (harcoded for now?)
+    """
+    with SessionFactory() as session:
+        apps = retrieve_applications_alchemy(session, user_id, page, limit)
+    return apps
 
 def get_application_by_id(app_id, user_id):
     with SessionFactory() as session:
-        application = retrieve_application_protected_id_alchemy(session, app_id, user_id)
+        application = retrieve_application_id_alchemy(session, app_id, user_id)
 
     if application is None:
         raise ResourceNotFoundError("Application not found.")
 
     return application
-
-def get_applications(user_id):
-    with SessionFactory() as session:
-        apps_protected = retrieve_applications_protected_alchemy(session, user_id)
-    return apps_protected
 
 def create_application(data: dict, user_id: int):
     # Can be ommitted now, thanks to Pydantic
@@ -106,6 +84,7 @@ def modify_application(app_id: int, data: dict, user_id: int):
     if any(key not in ALLOWED_KEYS for key in data):
         raise ValidationError("Invalid field found.")   
 
+    # TODO replace manual validation with Pydantic validation
     enforce_rules(data)
     validate_dates(data)
     

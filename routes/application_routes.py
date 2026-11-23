@@ -8,7 +8,7 @@ application_bp = Blueprint(
     url_prefix="/applications" # Prepends /applications to all routes in this BP
 )
 
-# get specific protected app
+# get specific app
 @application_bp.route("/<int:app_id>")
 @jwt_required()
 def get_app_protected(app_id):
@@ -22,9 +22,14 @@ def get_app_protected(app_id):
 @application_bp.route("", methods=["GET"])
 @jwt_required()
 def get_apps_protected():
+    page = request.args.get("page", default=1, type=int)
+
+    # Guard against negative numbers
+    page = max(1, page)
+
     user_id = int(get_jwt_identity())
 
-    user_apps = get_applications(user_id)
+    user_apps = get_applications(user_id, page)
 
     return jsonify(user_apps)
 

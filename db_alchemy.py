@@ -39,28 +39,16 @@ def _get_user_application(session, app_id: int, user_id: int) -> Application | N
 
 # APPLICATIONS
 
-# remove unprotected version?
-def retrieve_applications_all_alchemy(session):
-    stmt = select(Application).order_by(Application.id)
-    applications = session.scalars(stmt).all()
+def retrieve_applications_alchemy(session, user_id: int, page: int, limit: int):
+    # offset = skip offset many applications
+    # if on first page, don't skip any, get limit first apps
+    # if page > 1, skip first page, decrement page by 1 because first page is 1 not 0
+    if page == 1:
+        offset = 0
+    else:
+        offset = (page - 1) * limit
 
-    all_apps = [app.to_dict() for app in applications]
-
-    # OLD
-    # for app in applications:
-    #     all_apps.append({
-    #         "id": app.id,
-    #         "company": app.company,
-    #         "title": app.title,
-    #         "date_applied": app.date_applied,
-    #         "status": app.status,
-    #         "date_interview": app.date_interview
-    #     })
-    return all_apps
-
-
-def retrieve_applications_protected_alchemy(session, user_id):
-    stmt = select(Application).where(Application.user_id == user_id).order_by(Application.id)
+    stmt = select(Application).where(Application.user_id == user_id).order_by(Application.id).limit(limit).offset(offset)
     applications = session.scalars(stmt).all()
 
     # for user privacy, to_dict excludes user_id
@@ -68,21 +56,7 @@ def retrieve_applications_protected_alchemy(session, user_id):
 
     return user_apps
 
-# remove unprotected version?
-def retrieve_application_id_alchemy(session, app_id):
-    # OLD
-    # stmt = select(Application).where(Application.id == app_id)
-    # application: Application | None = session.scalars(stmt).one_or_none()
-
-    # cleaner alternative, fetches directly by primary key
-    application = session.get(Application, app_id)
-
-    if application is None:
-        return None
-    
-    return application.to_dict()
-
-def retrieve_application_protected_id_alchemy(session, app_id, user_id):
+def retrieve_application_id_alchemy(session, app_id, user_id):
     # cleaner alternative, fetches directly by primary key
     application = _get_user_application(session, app_id, user_id)
 
