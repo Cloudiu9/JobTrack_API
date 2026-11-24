@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from pydantic_rules import GetApplicationQuery
 from services.application_service import get_application_by_id, create_application, get_applications, modify_application, delete_application
+from services.helper import LIMIT_DEFAULT, PAGE_DEFAULT
 
 application_bp = Blueprint(
     'applications', # Blueprint name
@@ -22,17 +24,11 @@ def get_app_protected(app_id):
 @application_bp.route("", methods=["GET"])
 @jwt_required()
 def get_apps_protected():
-    # IMP if defaults are modified from here, also modify in service
-    page = request.args.get("page", default=1, type=int)
-    limit = request.args.get("limit", default=3, type=int) 
-
-    # Enforce safety bounds
-    page = max(1, page if page is not None else 1)
-    limit = max(1, min(limit if limit is not None else 3, 50)) # clamp limit 1-50
+    query = GetApplicationQuery.model_validate(request.args.to_dict())
 
     user_id = int(get_jwt_identity())
 
-    response = get_applications(user_id, page, limit)
+    response = get_applications(user_id, query.status, query.page, query.limit)
 
     return jsonify(response)
 

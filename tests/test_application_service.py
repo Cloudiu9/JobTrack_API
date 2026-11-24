@@ -97,7 +97,7 @@ def test_get_applications_success(setup_application_service):
                                                                 "status": "interview"}, 
                                                                 new_test_user["id"])
     
-    get_all_apps = application_service.get_applications(new_test_user["id"])
+    get_all_apps = application_service.get_applications(new_test_user["id"], status=None)
     get_app_1 = application_service.get_application_by_id(new_test_application["id"], new_test_user["id"])
     get_app_2 = application_service.get_application_by_id(new_test_application2["id"], new_test_user["id"])
 
@@ -111,7 +111,7 @@ def test_get_applications_success(setup_application_service):
     assert get_app_2["title"] == "Junior Engineer"
     assert get_app_2["status"] == "interview"
 
-def test_get_pagination_success(setup_application_service):
+def test_get_pagination_filtering_success(setup_application_service):
     _, new_test_user = setup_application_service()
 
     app_2 = {
@@ -121,11 +121,11 @@ def test_get_pagination_success(setup_application_service):
     }
 
     # create two more applications for same user
-    application_service.create_application(app_2, new_test_user["id"])
+    new_test_application_2 = application_service.create_application(app_2, new_test_user["id"])
     application_service.create_application(app_2, new_test_user["id"])
 
     # default page (1) and limit (3)
-    get_all_apps_1_3 = application_service.get_applications(new_test_user["id"])
+    get_all_apps_1_3 = application_service.get_applications(new_test_user["id"], status=None)
 
     assert len(get_all_apps_1_3["items"]) == 3
     assert get_all_apps_1_3["total_applications"] == 3
@@ -135,7 +135,7 @@ def test_get_pagination_success(setup_application_service):
     assert get_all_apps_1_3["has_prev"] == False
 
     # page (2) and limit (2)
-    get_all_apps_2_3 = application_service.get_applications(new_test_user["id"], page=2, limit=2)
+    get_all_apps_2_3 = application_service.get_applications(new_test_user["id"], status=None, page=2, limit=2)
 
     assert len(get_all_apps_2_3["items"]) == 1
     assert get_all_apps_2_3["total_applications"] == 3
@@ -144,6 +144,16 @@ def test_get_pagination_success(setup_application_service):
     assert get_all_apps_2_3["has_next"] == False
     assert get_all_apps_2_3["has_prev"] == True
 
+    # page (1), limit (2) and status = "interview"
+    get_all_apps_2_3_int = application_service.get_applications(new_test_user["id"], new_test_application_2["status"], page=1, limit=2)
+
+    assert len(get_all_apps_2_3_int["items"]) == 2
+    assert get_all_apps_2_3_int["total_applications"] == 2
+    assert get_all_apps_2_3_int["per_page"] == 2
+    assert get_all_apps_2_3_int["total_pages"] == 1
+    assert get_all_apps_2_3_int["has_next"] == False
+    assert get_all_apps_2_3_int["has_prev"] == False
+    assert get_all_apps_2_3_int["filter_by"] == new_test_application_2["status"]
 
 @pytest.mark.parametrize("target_user_id, length",
     [
@@ -170,11 +180,11 @@ def test_get_protected_applications(target_user_id, length, setup_application_se
     # logged_user_jwt = login_user(user_credentials)
 
     # for user privacy, to_dict excludes user_id
-    protected_apps_1 = application_service.get_applications(target_user_id)
+    protected_apps_1 = application_service.get_applications(target_user_id, status=None)
     assert len(protected_apps_1["items"]) == length
 
     # user 2 doesn't see user 1's applications
-    protected_apps_2 = application_service.get_applications(new_test_user2["id"])
+    protected_apps_2 = application_service.get_applications(new_test_user2["id"], status=None)
     assert protected_apps_2["items"][0]["id"] == 2
     assert protected_apps_2["items"][0]["company"] == "Google"
     assert protected_apps_2["items"][0]["title"] == "Software Engineer"

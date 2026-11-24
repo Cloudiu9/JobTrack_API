@@ -75,7 +75,7 @@ def test_get_all_applications_success(client, existing_application, auth_headers
     }
     ]
 
-def test_get_all_applications_pagination_success(client, existing_application, auth_headers):
+def test_get_all_applications_pagination_filtering_success(client, existing_application, auth_headers):
     payload = {
         "company": "Kaufland",
         "title": "Senior Engineer",
@@ -110,8 +110,29 @@ def test_get_all_applications_pagination_success(client, existing_application, a
     assert get_response_1_1.json["has_next"] == False
     assert get_response_1_1.json["has_prev"] == True
 
+    # page (1), limit(2) and status = interview
+    get_response_1_1 = client.get("/applications?page=1&limit=2&status=interview", headers=auth_headers())
+    assert get_response_1_1.status_code == 200
+    assert len(get_response_1_1.json["items"]) == 2
+    assert get_response_1_1.json["total_applications"] == 2
+    assert get_response_1_1.json["per_page"] == 2
+    assert get_response_1_1.json["total_pages"] == 1
+    assert get_response_1_1.json["has_next"] == False
+    assert get_response_1_1.json["has_prev"] == False
+
+@pytest.mark.parametrize("status",[
+    pytest.param("INVALID_STATUS"),
+    pytest.param("", id="missing_status"),
+])
+def test_get_all_applications_filtering_failure(client, status, existing_application, auth_headers):
+    get_response_failure = client.get(f"/applications?page=1&limit1&status={status}", headers=auth_headers())
+
+    assert get_response_failure.status_code == 400
+    assert get_response_failure.json["error"] == "VALIDATION_ERROR"
+    assert get_response_failure.json["message"] == "Data is invalid."
+    # assert "validation for GetApplicationQuery" in get_response_failure.json["details"]
+
 def test_get_all_applications_empty(client, auth_headers):
-    # auth_headers() not needed for get right now, will change eventually?
     response = client.get("/applications", headers=auth_headers())
 
     assert response.status_code == 200

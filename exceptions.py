@@ -1,6 +1,7 @@
 import logging
 from flask import jsonify, json
 from werkzeug.exceptions import HTTPException
+from pydantic import ValidationError as PydanticValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +48,16 @@ def handle_missing_error(e):
 def handle_duplicate_email_error(e):
     return jsonify({
         "error": "DUPLICATE_EMAIL_ERROR",
-        "message": "Resource not found.",
+        "message": "This email is already registered.",
         "details": str(e)
     }), 409
+
+def handle_pydantic_validation_error(e: PydanticValidationError):
+    return jsonify({
+        "error": "VALIDATION_ERROR",
+        "message": "Data is invalid.",
+        "details": str(e)
+    }), 400
 
 def handle_500_error(e):
     logger.exception(f"Unexpected server error: {str(e)}")
@@ -73,6 +81,7 @@ def handle_http_exception(e):
 def register_error_handlers(app):
     """Binds all global exception handlers to the Flask app instance."""
     app.register_error_handler(ValidationError, handle_validation_error)
+    app.register_error_handler(PydanticValidationError, handle_pydantic_validation_error)
     app.register_error_handler(ResourceNotFoundError, handle_missing_error)
     app.register_error_handler(AuthenticationError, handle_authentication_error)
     app.register_error_handler(DuplicateEmailError, handle_duplicate_email_error)

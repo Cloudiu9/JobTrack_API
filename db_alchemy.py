@@ -39,17 +39,22 @@ def _get_user_application(session, app_id: int, user_id: int) -> Application | N
 
 # APPLICATIONS
 
-def retrieve_applications_alchemy(session, user_id: int, page: int, limit: int):
+def retrieve_applications_alchemy(session, user_id: int, status: str | None, page: int, limit: int):
     # offset = skip offset many applications
     # if on first page, don't skip any, get limit first apps
     # if page > 1, skip first page, decrement page by 1 because first page is 1 not 0
-    offset = (page - 1) * limit
-    base_filter = Application.user_id == user_id
 
-    count_stmt = select(func.count()).select_from(Application).where(base_filter)
+    offset = (page - 1) * limit
+    filters = [Application.user_id == user_id]
+
+    status_filter = Application.status == status
+    if status is not None: # also filter by if it exists 
+        filters.append(status_filter)
+
+    count_stmt = select(func.count()).select_from(Application).where(*filters)
     total_count = session.scalar(count_stmt) or 0
 
-    stmt = select(Application).where(base_filter).order_by(Application.id).limit(limit).offset(offset)
+    stmt = select(Application).where(*filters).order_by(Application.id).limit(limit).offset(offset)
     # .all() pulls all rows into a standard Python list;
     # without .all(), this just returns a lazy "ScalarResult" that is exhausted once looped over once
     applications = session.scalars(stmt).all()

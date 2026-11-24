@@ -1,6 +1,9 @@
 from datetime import datetime
 from exceptions import ValidationError
 
+PAGE_DEFAULT = 1
+LIMIT_DEFAULT = 3
+
 def validate_dates(data):
     DATE_FIELDS = ["date_interview", "date_applied"]
 

@@ -1,11 +1,34 @@
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, SecretStr, field_validator
 from datetime import date
 from typing import Annotated, Literal
 from pydantic import ValidationError as PydanticValidationError
 from models import user
+from services.helper import LIMIT_DEFAULT, PAGE_DEFAULT
 
 # Application
-# needs a separate model for PATCH
+ApplicationStatus = Literal["applied", "interview"]
+
+# TODO a separate model for PATCH
+
+# GET (parameters)
+class GetApplicationQuery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True
+    )
+
+    status: ApplicationStatus | None = None
+    page: int = Field(default=PAGE_DEFAULT, ge=1)
+    limit: int = Field(default=LIMIT_DEFAULT, ge=1, le=50)
+
+    # lowercase ?status=APPlied before validating against Literal
+    @field_validator("status", mode="before")
+    @classmethod
+    def lowercase_status(cls, v):
+        if isinstance(v, str):
+            v = v.strip().lower()
+            return v if v else None
+        return v
 
 # POST
 class CreateApplicationRequest(BaseModel):
@@ -17,7 +40,7 @@ class CreateApplicationRequest(BaseModel):
     company: str = Field(min_length=1)
     title: str = Field(min_length=1)
     date_applied: date = Field(default=None) # type: ignore # this can be omitted since it has a default, but can't be None
-    status: Literal["applied", "interview"]
+    status: ApplicationStatus
     date_interview: date | None = None
 
 # User
