@@ -7,6 +7,7 @@ from services.helper import LIMIT_DEFAULT, PAGE_DEFAULT
 
 # Application
 ApplicationStatus = Literal["applied", "interview"]
+ApplicationOrder = Literal["desc", "asc"]
 
 # TODO a separate model for PATCH
 
@@ -18,6 +19,7 @@ class GetApplicationQuery(BaseModel):
     )
 
     status: ApplicationStatus | None = None
+    order: ApplicationOrder | None = Field(default="desc")
     page: int = Field(default=PAGE_DEFAULT, ge=1)
     limit: int = Field(default=LIMIT_DEFAULT, ge=1, le=50)
 

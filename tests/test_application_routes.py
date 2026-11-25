@@ -59,23 +59,45 @@ def test_get_all_applications_success(client, existing_application, auth_headers
 
 
     assert body["items"] == [
-        {
-        "company": "Bosch",
-        "title": "Junior Engineer",
-        "status": "applied",
-        "date_applied": "2026-10-26",
-        "date_interview": None,
-    }, 
     {
         "company": "Kaufland",
         "title": "Senior Engineer",
         "status" : "interview",
         "date_applied": '2026-10-29',
         "date_interview": None,
+    },
+    {
+        "company": "Bosch",
+        "title": "Junior Engineer",
+        "status": "applied",
+        "date_applied": "2026-10-26",
+        "date_interview": None,
     }
     ]
 
-def test_get_all_applications_pagination_filtering_success(client, existing_application, auth_headers):
+# order is descending by default in db anyway, might as well have it "desc" in here for clarity
+@pytest.mark.parametrize("status, order, page, limit, companies, envelope",[
+    pytest.param(None, "desc", 1, 2, ["Kaufland", "Bosch"], (
+        2, 3, 2, 2, True, False
+    ), id="page_1_limit_2"),
+    pytest.param(None, "desc", 2, 2, ["Bosch"], (
+        1, 3, 2, 2, False, True
+    ), id="page_2_limit_2"),
+    pytest.param("interview", "desc", 1, 2, ["Kaufland", "Kaufland"], (
+        2, 2, 2, 1, False, False
+    ), id="page_1_limit_2_interview"),
+    pytest.param(None, "asc", 1, 3, ["Bosch", "Kaufland", "Kaufland"], (
+        3, 3, 3, 1, False, False
+    ), id="page_1_limit_3_asc"),
+])
+def test_get_all_query_params_success(client, existing_application, auth_headers, status, order, page, limit, companies, envelope):
+    params = {
+    "page": page,
+    "limit": limit,
+    "status": status,
+    "order": order,
+    }
+
     payload = {
         "company": "Kaufland",
         "title": "Senior Engineer",
@@ -91,34 +113,18 @@ def test_get_all_applications_pagination_filtering_success(client, existing_appl
     assert create_response.status_code == 201
 
     # page (1) and limit(2)
-    get_response_1_1 = client.get("/applications?page=1&limit=2", headers=auth_headers())
-    assert get_response_1_1.status_code == 200
-    assert len(get_response_1_1.json["items"]) == 2
-    assert get_response_1_1.json["total_applications"] == 3
-    assert get_response_1_1.json["per_page"] == 2
-    assert get_response_1_1.json["total_pages"] == 2
-    assert get_response_1_1.json["has_next"] == True
-    assert get_response_1_1.json["has_prev"] == False
-
-    # page (2) and limit(2)
-    get_response_1_1 = client.get("/applications?page=2&limit=2", headers=auth_headers())
-    assert get_response_1_1.status_code == 200
-    assert len(get_response_1_1.json["items"]) == 1
-    assert get_response_1_1.json["total_applications"] == 3
-    assert get_response_1_1.json["per_page"] == 2
-    assert get_response_1_1.json["total_pages"] == 2
-    assert get_response_1_1.json["has_next"] == False
-    assert get_response_1_1.json["has_prev"] == True
-
-    # page (1), limit(2) and status = interview
-    get_response_1_1 = client.get("/applications?page=1&limit=2&status=interview", headers=auth_headers())
-    assert get_response_1_1.status_code == 200
-    assert len(get_response_1_1.json["items"]) == 2
-    assert get_response_1_1.json["total_applications"] == 2
-    assert get_response_1_1.json["per_page"] == 2
-    assert get_response_1_1.json["total_pages"] == 1
-    assert get_response_1_1.json["has_next"] == False
-    assert get_response_1_1.json["has_prev"] == False
+    get_response = client.get(f"/applications", query_string=params, headers=auth_headers())
+    assert get_response.status_code == 200
+    assert len(get_response.json["items"]) == envelope[0]
+    for item in get_response.json["items"]:
+        assert item["company"] in companies
+    assert get_response.json["total_applications"] == envelope[1]
+    assert get_response.json["per_page"] == envelope[2]
+    assert get_response.json["total_pages"] == envelope[3]
+    assert get_response.json["has_next"] == envelope[4]
+    assert get_response.json["has_prev"] == envelope[5]
+    assert get_response.json["filter_by"] == status
+    assert get_response.json["order"] == order
 
 @pytest.mark.parametrize("status",[
     pytest.param("INVALID_STATUS"),

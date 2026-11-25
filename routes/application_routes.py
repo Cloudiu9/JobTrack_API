@@ -28,7 +28,7 @@ def get_apps_protected():
 
     user_id = int(get_jwt_identity())
 
-    response = get_applications(user_id, query.status, query.page, query.limit)
+    response = get_applications(user_id, query.status, query.order, query.page, query.limit)
 
     return jsonify(response)
 

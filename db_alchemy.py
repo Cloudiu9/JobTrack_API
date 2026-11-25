@@ -1,9 +1,9 @@
 import os
+from models.user import User
 from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 from models.application import Application
-from models.user import User
+from sqlalchemy import URL, create_engine, func, select
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ def _get_user_application(session, app_id: int, user_id: int) -> Application | N
 
 # APPLICATIONS
 
-def retrieve_applications_alchemy(session, user_id: int, status: str | None, page: int, limit: int):
+def retrieve_applications_alchemy(session, user_id: int, status: str | None, order: str | None, page: int, limit: int):
     # offset = skip offset many applications
     # if on first page, don't skip any, get limit first apps
     # if page > 1, skip first page, decrement page by 1 because first page is 1 not 0
@@ -51,10 +51,17 @@ def retrieve_applications_alchemy(session, user_id: int, status: str | None, pag
     if status is not None: # also filter by if it exists 
         filters.append(status_filter)
 
+    order_column = (
+        Application.date_applied.asc()
+        if order == "asc"
+        else Application.date_applied.desc()
+    )
+
     count_stmt = select(func.count()).select_from(Application).where(*filters)
     total_count = session.scalar(count_stmt) or 0
 
-    stmt = select(Application).where(*filters).order_by(Application.id).limit(limit).offset(offset)
+    stmt = select(Application).where(*filters).order_by(order_column, Application.id).limit(limit).offset(offset)
+
     # .all() pulls all rows into a standard Python list;
     # without .all(), this just returns a lazy "ScalarResult" that is exhausted once looped over once
     applications = session.scalars(stmt).all()

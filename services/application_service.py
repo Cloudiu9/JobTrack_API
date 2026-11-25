@@ -1,12 +1,12 @@
 import math
-from pydantic_rules import ApplicationStatus, CreateApplicationRequest
 from models.application import STATUS, ALLOWED_KEYS
-from services.helper import LIMIT_DEFAULT, PAGE_DEFAULT, enforce_rules, validate_dates
 from exceptions import ResourceNotFoundError, ValidationError
 from pydantic import ValidationError as PydanticValidationError
+from services.helper import LIMIT_DEFAULT, PAGE_DEFAULT, enforce_rules, validate_dates
+from pydantic_rules import ApplicationOrder, ApplicationStatus, CreateApplicationRequest
 from db_alchemy import SessionFactory, insert_application_alchemy, retrieve_application_id_alchemy, retrieve_applications_alchemy, update_application_id_alchemy, delete_application_id_alchemy
 
-def get_applications(user_id: int, status: ApplicationStatus | None, page = PAGE_DEFAULT, limit = LIMIT_DEFAULT):
+def get_applications(user_id: int, status: ApplicationStatus | None, order: ApplicationOrder | None, page = PAGE_DEFAULT, limit = LIMIT_DEFAULT):
     """
     Pagination:
 
@@ -18,7 +18,7 @@ def get_applications(user_id: int, status: ApplicationStatus | None, page = PAGE
 
     """
     with SessionFactory() as session:
-        apps, total_apps = retrieve_applications_alchemy(session, user_id, status, page, limit)
+        apps, total_apps = retrieve_applications_alchemy(session, user_id, status, order, page, limit)
 
     total_pages = math.ceil(total_apps/limit)
 
@@ -29,7 +29,8 @@ def get_applications(user_id: int, status: ApplicationStatus | None, page = PAGE
         "total_pages": total_pages,
         "has_next": page < total_pages,
         "has_prev": page > 1,
-        "filter_by": status
+        "filter_by": status,
+        "order": order
     }
 
     return json_envelope
