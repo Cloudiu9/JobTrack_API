@@ -13,18 +13,19 @@ DB_NAME =os.environ.get("DB_NAME")
 DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 
+DB_SSLMODE = os.environ.get("DB_SSLMODE", "prefer")
+
 DATABASE_URL = URL.create(
     drivername="postgresql+psycopg",
     username=DB_USER,
     password=DB_PASSWORD,
     host=DB_HOST,
     port=int(DB_PORT),
-    database=DB_NAME
+    database=DB_NAME,
+    query={"sslmode": DB_SSLMODE},
 )
 
-engine = create_engine(
-    DATABASE_URL,
-)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 SessionFactory = sessionmaker(
     bind=engine,
