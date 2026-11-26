@@ -14,7 +14,6 @@ Built to practice production-style backend patterns: authentication, ownership c
 - [Error Format](#error-format)
 - [Project Structure](#project-structure)
 - [Testing](#testing)
-- [Known Limitations & Roadmap](#known-limitations--roadmap)
 
 ## Features
 
