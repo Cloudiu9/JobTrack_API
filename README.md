@@ -267,11 +267,3 @@ docker compose exec web pytest
 ```
 
 The suite covers services, routes and security helpers, and uses an in-memory SQLite database with per-test transaction rollback, so tests are isolated and fast.
-
-## Known Limitations & Roadmap
-
-- `GET /auth` and `GET /auth/{id}` are currently public and expose user ids and emails. They should be removed or protected.
-- The app runs Flask's development server with `debug=True`. A production setup should use a WSGI server (for example Gunicorn) with debug disabled.
-- `PATCH` validation is still manual and should move to a dedicated Pydantic model.
-- Only the `applied` and `interview` statuses are supported. Adding `offer` and `rejected` is planned.
-- Planned: refresh tokens, rate limiting, CI pipeline, OpenAPI/Swagger docs.
