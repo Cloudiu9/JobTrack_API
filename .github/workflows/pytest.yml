@@ -6,19 +6,22 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Python 3.13
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: "3.13"
-        cache: 'pip'
+        cache: "pip"
 
     - name: Install dependencies
       run: |
@@ -26,5 +29,8 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Pytest
-      run: |
-        PYTHONPATH=. python -m pytest
+      env:
+        PYTHONPATH: .
+        # app.py refuses to start without this; tests use in-memory SQLite, so no DB is needed
+        JWT_SECRET_KEY: ci-test-secret-not-for-production
+      run: python -m pytest
