@@ -193,7 +193,7 @@ def test_post_success(client, auth_headers):
         "status" : "INCORRECT_STATUS",
         "date_applied": '2026-10-26'
     }, 
-    "Input should be 'applied' or 'interview'",
+    "Input should be 'applied', 'interview', 'offer' or 'rejected'",
     id="invalid_status"
     ),
     pytest.param({

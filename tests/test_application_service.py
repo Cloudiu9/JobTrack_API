@@ -13,30 +13,25 @@ def raise_error(error, func_name, *args):
     with pytest.raises(error):
         target_func(*args)
 
-# def create_test_user(email="    USER@gmail.com  "):
-#     return register_user({
-#         "email": email,
-#         "password": "  passwordtenchars  ",
-#     })
-
-# def create_test_application(user_id: int):
-#     data = {
-#         "company": "Google",
-#         "title": "Software Engineer",
-#         "status": "applied",
-#         "date_interview": "2026-12-12",
-#     }
-
-#     return application_service.create_application(data, user_id)
-
 # CREATE
 
 def test_create_valid_application_success(setup_application_service):
-    new_test_application, _ = setup_application_service()
+    new_test_application, new_test_user = setup_application_service()
+    new_test_application2 = application_service.create_application(
+    {
+    "company": "Bosch",
+    "title": "Junior Engineer",
+    "status": "rejected"
+    }, 
+    new_test_user["id"])
 
     assert new_test_application["id"] is not None
     assert new_test_application["company"] == "Google"
     assert isinstance(new_test_application, dict)
+
+    assert new_test_application2["id"] is not None
+    assert new_test_application2["company"] == "Bosch"
+    assert new_test_application2["status"] == "rejected" 
 
 @pytest.mark.parametrize("data",
     [
@@ -92,10 +87,13 @@ def test_create_application_failure(data):
 
 def test_get_applications_success(setup_application_service):
     new_test_application, new_test_user = setup_application_service()
-    new_test_application2 = application_service.create_application({"company": "Bosch",
-                                                                "title": "Junior Engineer",
-                                                                "status": "interview"}, 
-                                                                new_test_user["id"])
+    new_test_application2 = application_service.create_application(
+    {
+    "company": "Bosch",
+    "title": "Junior Engineer",
+    "status": "offer"
+    }, 
+    new_test_user["id"])
     
     get_all_apps = application_service.get_applications(new_test_user["id"], status=None, order=None)
     get_app_1 = application_service.get_application_by_id(new_test_application["id"], new_test_user["id"])
@@ -109,7 +107,7 @@ def test_get_applications_success(setup_application_service):
 
     assert get_app_2["company"] == "Bosch"
     assert get_app_2["title"] == "Junior Engineer"
-    assert get_app_2["status"] == "interview"
+    assert get_app_2["status"] == "offer"
 
 @pytest.mark.parametrize("status, order, page, limit, companies, envelope",[
     pytest.param(None, "desc", 1, 3, ["Google", "Bosch"], (
@@ -118,9 +116,9 @@ def test_get_applications_success(setup_application_service):
     pytest.param(None, "desc", 2, 2, ["Bosch"], (
         1, 3, 2, 2, False, True
     ), id="page_2_limit_2"),
-    pytest.param("interview", "desc", 1, 2, ["Bosch", "Bosch"], (
+    pytest.param("rejected", "desc", 1, 2, ["Bosch", "Bosch"], (
         2, 2, 2, 1, False, False
-    ), id="page_1_limit_2_interview"),
+    ), id="page_1_limit_2_rejected"),
     pytest.param(None, "asc", 1, 3, ["Bosch", "Bosch", "Google"], (
         3, 3, 3, 1, False, False
     ), id="page_1_limit_3_asc"),
@@ -131,7 +129,7 @@ def test_get_query_params_success(setup_application_service, status, order, page
     app_2 = {
         "company": "Bosch",
         "title": "Junior Engineer",
-        "status": "interview",
+        "status": "rejected",
         "date_applied": "2010-10-10" # oldest, assuming setup application's date_applied is "today"
     }
 

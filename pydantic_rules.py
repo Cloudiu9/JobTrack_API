@@ -6,7 +6,7 @@ from models import user
 from services.helper import LIMIT_DEFAULT, PAGE_DEFAULT
 
 # Application
-ApplicationStatus = Literal["applied", "interview"]
+ApplicationStatus = Literal["applied", "interview", "offer", "rejected"]
 ApplicationOrder = Literal["desc", "asc"]
 
 # TODO a separate model for PATCH

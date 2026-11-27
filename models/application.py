@@ -4,7 +4,7 @@ from sqlalchemy import CheckConstraint, Date, Text, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from models.base import Base
 
-STATUS = ("applied", "interview")
+STATUS = ("applied", "interview", "offer", "rejected")
 ALLOWED_KEYS = ("company", "title", "date_applied", "status", "date_interview")
 
 # handle relationship error without circular imports
